@@ -8,12 +8,15 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 
 
 
 namespace td_api = td::td_api;
+
+/// TODO: some testing
 
 class TdClass {
 public:
@@ -25,15 +28,23 @@ public:
         SendQuery(td_api::make_object<td_api::getOption>("version"), {});
     }
 
+    /* Temporary method used for testing features */
+
     void Loop();
+
+    /* Method that tries to get last message in chat*/
 
     td::tl_object_ptr<td_api::message> GetLastMessage(td_api::int53 chat_id);
 
-    void DownloadFile(); // Implement
+    /* Method that downloads a file, returns the td_api::file, which contains file path, name, etc. */
+
+    td::tl_object_ptr<td_api::file> DownloadFile(int32_t file_id);
+
+    /* Method that sends file, located at path, in chat with chat_id*/
 
     void SendFile(td_api::int53 chat_id, const std::string& path);
 
-    /* Method to get chat id*/
+    /* Method to get chat_id from personal chat with @username*/
 
     td_api::int53 GetChatId(const std::string& username);
 
@@ -51,6 +62,7 @@ private:
     std::string api_hash_;
     std::uint64_t current_query_id_{0};
     std::uint64_t authentication_query_id_{0};
+    bool are_alive_{true};
 
     std::map<std::uint64_t, std::function<void(Object)>> handlers_;
 

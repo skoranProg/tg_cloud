@@ -5,6 +5,7 @@
 #include "tdclient.h"
 #include <iostream>
 #include <sstream>
+#include <thread>
 
 namespace detail {
     template <class... Fs>
@@ -31,17 +32,26 @@ auto overloaded(F... f) {
     return detail::overload<F...>(f...);
 }
 
+/* Username for file messages */
+
 const std::string USERNAME = "tg_cloudfilesbot";
+std::mutex handler_mutex_;
+
 
 void TdClass::Loop() {
 
         /// TODO: redo ts
-
+        std::thread thread([this]() {
+            while (are_alive_) {
+                this->ProcessResponse(client_manager_->receive(0));
+            }
+        });
+        thread.detach();
         while (true) {
             if (need_restart_) {
                 Restart();
             } else if (!are_authorized_) {
-                ProcessResponse(client_manager_->receive(10));
+                //ProcessResponse(client_manager_->receive(10));
             } else {
                 std::cout << "Enter action [q] quit [u] check for updates and request results [c] show chats [m <chat_id> "
                              "<text>] send message [me] show self [l] logout: "
@@ -54,6 +64,7 @@ void TdClass::Loop() {
                     continue;
                 }
                 if (action == "q") {
+                    are_alive_ = false;
                     return;
                 }
                 if (action == "u") {
@@ -94,17 +105,43 @@ void TdClass::Loop() {
                 } else if (action == "send") {
                     SendFile(GetChatId(USERNAME), "");
                 } else if (action == "reset") {
-                    /// TODO: init a special chat for a file upload or find if there's an existing one
+
 
                     auto deleter = td_api::make_object<td_api::deleteChatHistory>();
                     deleter->chat_id_ = GetChatId(USERNAME);
                     SendQuery(std::move(deleter), {});
                 } else if (action == "something") {
-                    /// TODO: Make a easy file upload using chat above
-                    GetLastMessage(GetChatId(USERNAME));
+
+                    auto mes = GetLastMessage(GetChatId(USERNAME));
+
+                    auto fl = td::move_tl_object_as<td_api::messageDocument>(mes->content_);
+                    auto dw_f = DownloadFile(fl->document_->document_->id_);
+                    std::cout << dw_f->local_->path_ << std::endl;
                 }
             }
         }
+}
+
+td::tl_object_ptr<td_api::file> TdClass::DownloadFile(int32_t file_id) {
+    auto dw = td_api::make_object<td_api::downloadFile>();
+    dw->file_id_ = file_id;
+    dw->synchronous_ = true;
+    dw->priority_ = 1;
+    td::tl_object_ptr<td_api::file> result = nullptr;
+    bool isDownloaded = false;
+    SendQuery(std::move(dw), [this, &result, &isDownloaded](Object object) {
+
+        if (object->get_id() == td_api::error::ID) {
+            std::cerr << to_string(object);
+            return;
+        }
+        isDownloaded = true;
+        result = td::move_tl_object_as<td_api::file>(object);;
+    });
+    while (!isDownloaded) {
+        std::this_thread::yield();
+    }
+    return result;
 }
 
 td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 chat_id) {
@@ -113,19 +150,23 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 c
     history->limit_ = 10;
     history->only_local_ = false;
     td::tl_object_ptr<td_api::message> last_message = nullptr;
-    SendQuery(std::move(history), [this, &last_message](Object object) {
+    bool wait = true;
+    SendQuery(std::move(history), [this, &wait, &last_message](Object object) {
                     if (object->get_id() == td_api::error::ID) {
                         std::cerr << to_string(object);
                         return;
                     }
                     auto mes = td::move_tl_object_as<td_api::messages>(object);
+                    wait = false;
                     if (!mes->total_count_) {
+
                         std::cerr << "Couldn't find any messages in file chat.\n";
                         return;
                     }
                     last_message = std::move(mes->messages_[0]);
-                });
-    while (!last_message) {
+    });
+    while (wait) {
+        std::this_thread::yield();
     }
     return last_message;
 }
@@ -143,7 +184,6 @@ void TdClass::SendFile(td_api::int53 chat_id, const std::string &path) {
             std::cerr << "Problem while sending file\n";
             return;
         }
-        std::cerr << "File was successfully sent\n";
     });
 }
 
@@ -167,7 +207,7 @@ td_api::int53 TdClass::GetChatId(const std::string& username) {
     return id;
 }
 
-void TdClass::Restart() {
+void TdClass::Restart()  {
     client_manager_.reset();
     *this = TdClass(api_id_, api_hash_);
 }
@@ -175,6 +215,7 @@ void TdClass::Restart() {
 void TdClass::SendQuery(td_api::object_ptr<td_api::Function> f, std::function<void(Object)> handler) {
     auto query_id = NextQueryId();
     if (handler) {
+        std::lock_guard<std::mutex> lock(handler_mutex_);
         handlers_.emplace(query_id, std::move(handler));
     }
     client_manager_->send(client_id_, query_id, std::move(f));
@@ -184,10 +225,10 @@ void TdClass::ProcessResponse(td::ClientManager::Response response) {
     if (!response.object) {
         return;
     }
-    // std::cout << response.request_id << " " << to_string(response.object) << std::endl;
     if (response.request_id == 0) {
         return ProcessUpdate(std::move(response.object));
     }
+    std::lock_guard<std::mutex> lock(handler_mutex_);
     auto it = handlers_.find(response.request_id);
     if (it != handlers_.end()) {
         it->second(std::move(response.object));
