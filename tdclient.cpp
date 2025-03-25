@@ -20,7 +20,7 @@ namespace detail {
     struct overload<F, Fs...>
             : public overload<F>
                     , public overload<Fs...> {
-        overload(F f, Fs... fs) : overload<F>(f), overload<Fs...>(fs...) {
+        explicit overload(F f, Fs... fs) : overload<F>(f), overload<Fs...>(fs...) {
         }
         using overload<F>::operator();
         using overload<Fs...>::operator();
@@ -35,23 +35,16 @@ auto overloaded(F... f) {
 /* Username for file messages */
 
 const std::string USERNAME = "tg_cloudfilesbot";
-std::mutex handler_mutex_;
-
 
 void TdClass::Loop() {
 
         /// TODO: redo ts
-        std::thread thread([this]() {
-            while (are_alive_) {
-                this->ProcessResponse(client_manager_->receive(0));
-            }
-        });
-        thread.detach();
+
         while (true) {
             if (need_restart_) {
                 Restart();
             } else if (!are_authorized_) {
-                //ProcessResponse(client_manager_->receive(10));
+                ProcessResponse(client_manager_->receive(10));
             } else {
                 std::cout << "Enter action [q] quit [u] check for updates and request results [c] show chats [m <chat_id> "
                              "<text>] send message [me] show self [l] logout: "
@@ -152,12 +145,12 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 c
     td::tl_object_ptr<td_api::message> last_message = nullptr;
     bool wait = true;
     SendQuery(std::move(history), [this, &wait, &last_message](Object object) {
+                    wait = false;
                     if (object->get_id() == td_api::error::ID) {
                         std::cerr << to_string(object);
                         return;
                     }
                     auto mes = td::move_tl_object_as<td_api::messages>(object);
-                    wait = false;
                     if (!mes->total_count_) {
 
                         std::cerr << "Couldn't find any messages in file chat.\n";
@@ -166,7 +159,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 c
                     last_message = std::move(mes->messages_[0]);
     });
     while (wait) {
-        std::this_thread::yield();
+        ProcessResponse(client_manager_->receive(0));;
     }
     return last_message;
 }
@@ -203,6 +196,7 @@ td_api::int53 TdClass::GetChatId(const std::string& username) {
         id = chats->id_;
     });
     while (id == 0) {
+        ProcessResponse(client_manager_->receive(0));
     }
     return id;
 }
@@ -215,7 +209,6 @@ void TdClass::Restart()  {
 void TdClass::SendQuery(td_api::object_ptr<td_api::Function> f, std::function<void(Object)> handler) {
     auto query_id = NextQueryId();
     if (handler) {
-        std::lock_guard<std::mutex> lock(handler_mutex_);
         handlers_.emplace(query_id, std::move(handler));
     }
     client_manager_->send(client_id_, query_id, std::move(f));
@@ -228,7 +221,6 @@ void TdClass::ProcessResponse(td::ClientManager::Response response) {
     if (response.request_id == 0) {
         return ProcessUpdate(std::move(response.object));
     }
-    std::lock_guard<std::mutex> lock(handler_mutex_);
     auto it = handlers_.find(response.request_id);
     if (it != handlers_.end()) {
         it->second(std::move(response.object));
@@ -347,6 +339,12 @@ void TdClass::CheckAuthenticationError(Object object) {
 
 std::uint64_t TdClass::NextQueryId() {
     return ++current_query_id_;
+}
+
+void TdClass::Start() {
+    while (!are_authorized_) {
+        ProcessResponse(client_manager_->receive(10));
+    }
 }
 
 

@@ -28,6 +28,10 @@ public:
         SendQuery(td_api::make_object<td_api::getOption>("version"), {});
     }
 
+    /* Method to authorize into tg*/
+
+    void Start();
+
     /* Temporary method used for testing features */
 
     void Loop();
