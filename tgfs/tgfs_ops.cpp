@@ -7,9 +7,8 @@
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
   auto context = tgfs_data::tgfs_ptr(req);
-  tgfs_inode *parent_inode = context->lookup_inode(parent);
-  int parent_fd = parent_inode->fd;
-  if (!context->lookup_dir_ftable(parent_fd)->contains(name)) {
+  int parent_fd = context->lookup_fd(parent);
+  if (!context->lookup_dir_ftable(parent_fd).contains(name)) {
     fuse_reply_err(req, ENOENT);
     return;
   }
