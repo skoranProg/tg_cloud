@@ -52,7 +52,17 @@ public:
 
     td_api::int53 GetChatId(const std::string& username);
 
+    /* Method to get information about a message */
 
+    td::tl_object_ptr<td_api::message> GetMessage(td_api::int53 chat_id, td_api::int53 message_id);
+
+    /* Method to pin message */
+
+    void PinMessage(td_api::int53 chat_id, td_api::int53 message_id);
+
+    /* Method to get pinned message */
+
+    td::tl_object_ptr<td_api::message> GetLastPinnedMessage(td_api::int53 chat_id);
 
 private:
     using Object = td_api::object_ptr<td_api::Object>;

@@ -140,8 +140,9 @@ td::tl_object_ptr<td_api::file> TdClass::DownloadFile(int32_t file_id) {
 td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 chat_id) {
     auto history = td_api::make_object<td_api::getChatHistory>();
     history->chat_id_ = chat_id;
-    history->limit_ = 10;
+    history->limit_ = 1;
     history->only_local_ = false;
+    history->from_message_id_ = 0;
     td::tl_object_ptr<td_api::message> last_message = nullptr;
     bool wait = true;
     SendQuery(std::move(history), [this, &wait, &last_message](Object object) {
@@ -347,4 +348,58 @@ void TdClass::Start() {
     }
 }
 
+td::tl_object_ptr<td_api::message> TdClass::GetMessage(td_api::int53 chat_id, td_api::int53 message_id) {
+    auto get_mes = td_api::make_object<td_api::getMessage>();
+    get_mes->chat_id_ = chat_id;
+    get_mes->message_id_ = message_id;
+    td::tl_object_ptr<td_api::message> result = nullptr;
+    bool wait = true;
+    SendQuery(std::move(get_mes), [this, &result, &wait](Object object) {
+        wait = false;
+        if (object->get_id() == td_api::error::ID) {
+            std::cerr << "Problem getting message\n";
+            return;
+        }
+        result = td::move_tl_object_as<td_api::message>(object);
+    });
+    while (wait) {
+        ProcessResponse(client_manager_->receive(0));
+    }
+    return result;
+}
+
+void TdClass::PinMessage(td_api::int53 chat_id, td_api::int53 message_id) {
+    auto req = td_api::make_object<td_api::pinChatMessage>();
+    req->message_id_ = message_id;
+    req->chat_id_ = chat_id;
+    req->disable_notification_ = false;
+    req->only_for_self_ = false;
+    bool wait = true;
+    SendQuery(std::move(req),  [this, &wait](Object object) {
+        wait = false;
+        std::cout << to_string(object);
+        });
+    while (wait) {
+        ProcessResponse(client_manager_->receive(0));
+    }
+}
+
+td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 chat_id) {
+    auto get_mes = td_api::make_object<td_api::getChatPinnedMessage>();
+    get_mes->chat_id_ = chat_id;
+    td::tl_object_ptr<td_api::message> result = nullptr;
+    bool wait = true;
+    SendQuery(std::move(get_mes), [this, &result, &wait](Object object) {
+        wait = false;
+        if (object->get_id() == td_api::error::ID) {
+            std::cerr << "Problem getting pinned message\n";
+            return;
+        }
+        result = td::move_tl_object_as<td_api::message>(object);
+    });
+    while (wait) {
+        ProcessResponse(client_manager_->receive(0));
+    }
+    return result;
+}
 
