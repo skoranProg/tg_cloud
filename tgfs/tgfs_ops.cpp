@@ -4,20 +4,20 @@
 #include "tgfs.h"
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/sysmacros.h>
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
   auto context = tgfs_data::tgfs_ptr(req);
-  int parent_fd = context->lookup_fd(parent);
-  if (!context->lookup_dir_ftable(parent_fd).contains(name)) {
+  if (!context->lookup_dir_ftable(parent).contains(name)) {
     fuse_reply_err(req, ENOENT);
     return;
   }
   struct fuse_entry_param e = {
-      .ino = context->lookup_dir_ftable(parent_fd)[name],
+      .ino = context->lookup_dir_ftable(parent)[name],
       .attr_timeout = context->get_timeout(),
       .entry_timeout = context->get_timeout(),
   };
-  if (fstatat(context->get_root_fd(), std::to_string().c_str(), &e.attr,
+  if (fstatat(context->get_root_fd(), std::to_string(e.ino).c_str(), &e.attr,
               AT_SYMLINK_NOFOLLOW) == -1) {
     fuse_reply_err(req, errno);
     return;
@@ -28,7 +28,23 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 
 void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
                 mode_t mode, dev_t rdev) {
-  // TODO
+  if(!S_ISREG(mode)) {
+    fuse_reply_err(req, ENOSYS);
+    return;
+  }
+  auto context = tgfs_data::tgfs_ptr(req);
+  if(context->lookup_dir_ftable(parent).contains(name)) {
+    fuse_reply_err(req, EEXIST);
+    return;
+  }
+  fuse_ino_t nod_ino = get_new_ino(req);
+  if(mknodat(context->get_root_fd(), std::to_string(nod_ino).c_str(), mode, rdev) == -1) {
+    fuse_reply_err(req, errno);
+    return;
+  }
+  if(upload() != 0) {
+    //TODO : handle exception
+  }
 }
 
 void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,

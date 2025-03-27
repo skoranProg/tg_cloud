@@ -28,25 +28,26 @@ tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
   return reinterpret_cast<tgfs_data *>(fuse_req_userdata(req));
 }
 
-int tgfs_data::lookup_fd(fuse_ino_t ino) {
-  if (!get_fds().contains(ino)) {
-    return -1;
-  }
-  return get_fds()[ino];
-}
-
-uint64_t lookup_msg(fuse_ino_t ino) {
+uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
   if (!get_messages().contains(ino)) {
     return 0;
   }
   return get_messages()[ino];
 }
 
-tgfs_table &lookup_dir_ftable(in fd) {
-  if (!get_directories().contains(fd)) {
+tgfs_table &tgfs_data::lookup_dir_ftable(fuse_ino_t ino) {
+  if (!get_directories().contains(ino)) {
     return nullptr;
   }
-  return get_directories()[fd];
+  return get_directories()[ino];
+}
+
+int tgfs_upload(fuse_ino_t ino) {
+  // TODO
+}
+
+int tgfs_update(fuse_ino_t ino) {
+  // TODO
 }
 
 //
@@ -54,7 +55,7 @@ tgfs_table &lookup_dir_ftable(in fd) {
 fuse_ino_t get_new_ino(fuse_req_t req) {
   auto context = tgfs_data::tgfs_ptr(req);
   fuse_ino_t res = rnd();
-  while (context->get_inodes().contains(res) || res == 0) {
+  while (context->get_messages().contains(res) || res == 0) {
     ++res;
   }
   return res;
