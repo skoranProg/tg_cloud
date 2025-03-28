@@ -1,7 +1,5 @@
-#define FUSE_USE_VERSION 34
-
 #include "errno.h"
-#include "tgfs.h"
+#include "tgfs_data.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
