@@ -35,7 +35,7 @@ uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
   return get_messages()[ino];
 }
 
-tgfs_table &tgfs_data::lookup_dir_ftable(fuse_ino_t ino) {
+tgfs_ftable &tgfs_data::lookup_dir_ftable(fuse_ino_t ino) {
   if (!get_directories().contains(ino)) {
     return nullptr;
   }

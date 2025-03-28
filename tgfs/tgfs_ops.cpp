@@ -28,26 +28,27 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 
 void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
                 mode_t mode, dev_t rdev) {
-  if(!S_ISREG(mode)) {
+  if (!S_ISREG(mode)) {
     fuse_reply_err(req, ENOSYS);
     return;
   }
   auto context = tgfs_data::tgfs_ptr(req);
-  if(context->lookup_dir_ftable(parent).contains(name)) {
+  if (context->lookup_dir_ftable(parent).contains(name)) {
     fuse_reply_err(req, EEXIST);
     return;
   }
   fuse_ino_t nod_ino = get_new_ino(req);
-  if(mknodat(context->get_root_fd(), std::to_string(nod_ino).c_str(), mode, rdev) == -1) {
+  if (mknodat(context->get_root_fd(), std::to_string(nod_ino).c_str(), mode,
+              rdev) == -1) {
     fuse_reply_err(req, errno);
     return;
   }
-  if(context->tgfs_upload(nod_ino) != 0) {
-    //TODO : handle exception
+  if (context->tgfs_upload(nod_ino) != 0) {
+    // TODO : handle exception
   }
   context->lookup_dir_ftable(parent)[name] = nod_ino;
-  if(context->tgfs_upload(parent) != 0) {
-    //TODO : handle exception
+  if (context->tgfs_upload(parent) != 0) {
+    // TODO : handle exception
   }
 }
 
