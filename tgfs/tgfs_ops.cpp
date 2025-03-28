@@ -42,7 +42,11 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     fuse_reply_err(req, errno);
     return;
   }
-  if(upload() != 0) {
+  if(context->tgfs_upload(nod_ino) != 0) {
+    //TODO : handle exception
+  }
+  context->lookup_dir_ftable(parent)[name] = nod_ino;
+  if(context->tgfs_upload(parent) != 0) {
     //TODO : handle exception
   }
 }
