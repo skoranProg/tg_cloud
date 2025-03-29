@@ -15,9 +15,10 @@ private:
 
 public:
   tgfs_dir(fuse_ino_t self, fuse_ino_t parent);
-  bool contains(std::string name);
+  bool contains(const std::string &name);
   bool contains(fuse_ino_t ino);
-  int add(std::string name, fuse_ino_t ino);
-  fuse_ino_t lookup(std::string name);
+  int add(const std::string &name, fuse_ino_t ino);
+  fuse_ino_t lookup(const std::string &name);
 };
+
 #endif

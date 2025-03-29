@@ -1,17 +1,20 @@
-#include "errno.h"
 #include "tgfs_data.h"
+#include "tgfs_helpers.h"
+
+#include "errno.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
   auto context = tgfs_data::tgfs_ptr(req);
-  if (!context->lookup_dir_ftable(parent).contains(name)) {
+  tgfs_dir *parent_dir = context->lookup_dir(parent);
+  if (!parent_dir->contains(name)) {
     fuse_reply_err(req, ENOENT);
     return;
   }
   struct fuse_entry_param e = {
-      .ino = context->lookup_dir_ftable(parent)[name],
+      .ino = parent_dir->lookup(name),
       .attr_timeout = context->get_timeout(),
       .entry_timeout = context->get_timeout(),
   };
@@ -31,7 +34,8 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     return;
   }
   auto context = tgfs_data::tgfs_ptr(req);
-  if (context->lookup_dir_ftable(parent).contains(name)) {
+  tgfs_dir *parent_dir = context->lookup_dir(parent);
+  if (parent_dir->contains(name)) {
     fuse_reply_err(req, EEXIST);
     return;
   }
@@ -41,11 +45,11 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     fuse_reply_err(req, errno);
     return;
   }
-  if (context->tgfs_upload(nod_ino) != 0) {
+  if (context->upload(nod_ino) != 0) {
     // TODO : handle exception
   }
-  context->lookup_dir_ftable(parent)[name] = nod_ino;
-  if (context->tgfs_upload(parent) != 0) {
+  parent_dir->add(name, nod_ino);
+  if (context->upload(parent) != 0) {
     // TODO : handle exception
   }
 }

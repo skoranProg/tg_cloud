@@ -3,6 +3,6 @@
 
 #include "../tdclient.h"
 
-int make_new_tgfs(int argc, char *argv[], TdClass tdclient);
+int make_new_tgfs(int argc, char *argv[], TdClass *tdclient);
 
 #endif

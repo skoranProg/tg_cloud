@@ -4,10 +4,11 @@
 #include "tgfs_fuse_dependencies.h"
 
 #include "../tdclient.h"
+#include "tgfs_dir.h"
 
 class tgfs_data {
 private:
-  TdClass tdclient;
+  TdClass *tdclient;
   double timeout;
   const int root_fd;
   // Only physically present(downloaded) files
@@ -22,7 +23,7 @@ private:
   std::unordered_map<fuse_ino_t, tgfs_dir> &get_directories();
 
 public:
-  tgfs_data(double timeout, int root_fd);
+  tgfs_data(double timeout, int root_fd, TdClass *tdclient);
 
   static tgfs_data *tgfs_ptr(fuse_req_t req);
 
