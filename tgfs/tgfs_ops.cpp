@@ -39,7 +39,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     fuse_reply_err(req, EEXIST);
     return;
   }
-  fuse_ino_t nod_ino = get_new_ino(req);
+  fuse_ino_t nod_ino = get_new_ino(*context);
   if (mknodat(context->get_root_fd(), std::to_string(nod_ino).c_str(), mode,
               rdev) == -1) {
     fuse_reply_err(req, errno);
