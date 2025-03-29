@@ -82,7 +82,7 @@ int make_new_tgfs(int argc, char *argv[], TdClass *tdclient) {
     return 1;
   }
 
-  tgfs_data *context = new tgfs_data(custom_opts.timeout, root_fd,
+  tgfs_data *context = new tgfs_data(opts.debug, custom_opts.timeout, root_fd,
                                      custom_opts.max_filesize, tdclient);
 
   struct fuse_session *se =
