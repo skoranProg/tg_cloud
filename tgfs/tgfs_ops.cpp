@@ -97,7 +97,8 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
   tgfs_data *context = tgfs_data::tgfs_ptr(req);
-  int fd = openat(context->get_root_fd(), std::to_string(ino).c_str(), fi->flags);
+  int fd =
+      openat(context->get_root_fd(), std::to_string(ino).c_str(), fi->flags);
   if (fd == -1) {
     fuse_reply_err(req, errno);
     return;
@@ -109,7 +110,11 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 
 void tgfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                struct fuse_file_info *fi) {
-  // TODO
+  struct fuse_bufvec buf = FUSE_BUFVEC_INIT(size);
+  buf.buf[0].flags = FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK;
+  buf.buf[0].fd = fi->fh;
+  buf.buf[0].pos = off;
+  fuse_reply_data(req, &buf, FUSE_BUF_SPLICE_MOVE);
 }
 
 void tgfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size,
