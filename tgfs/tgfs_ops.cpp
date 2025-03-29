@@ -141,7 +141,14 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
 }
 
 void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-  // TODO
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  int err = context->upload(ino);
+  fuse_reply_err(req, err);
+}
+
+void tgfs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
+  int err = close(fi->fh);
+  fuse_reply_err(req, err);
 }
 
 void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -163,6 +170,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .open = tgfs_open,
     .read = tgfs_read,
     .flush = tgfs_flush,
+    .release = tgfs_release,
     .readdir = tgfs_readdir,
     .write_buf = tgfs_write_buf,
 };
