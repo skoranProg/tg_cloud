@@ -11,6 +11,7 @@ private:
   TdClass *tdclient;
   double timeout;
   const int root_fd;
+  const size_t max_filesize;
   // Only physically present(downloaded) files
   std::unordered_map<fuse_ino_t, uint64_t> last_version; // ino -> msg_id
   // All files on server
@@ -23,13 +24,16 @@ private:
   std::unordered_map<fuse_ino_t, tgfs_dir> &get_directories();
 
 public:
-  tgfs_data(double timeout, int root_fd, TdClass *tdclient);
+  tgfs_data(double timeout, int root_fd, size_t max_filesize,
+            TdClass *tdclient);
 
   static tgfs_data *tgfs_ptr(fuse_req_t req);
 
   double get_timeout();
 
   int get_root_fd();
+
+  size_t get_max_filesize();
 
   uint64_t lookup_msg(fuse_ino_t ino);
 
