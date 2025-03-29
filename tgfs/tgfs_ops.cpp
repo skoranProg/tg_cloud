@@ -7,7 +7,7 @@
 #include <sys/sysmacros.h>
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
-  auto context = tgfs_data::tgfs_ptr(req);
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
   tgfs_dir *parent_dir = context->lookup_dir(parent);
   if (!parent_dir->contains(name)) {
     fuse_reply_err(req, ENOENT);
@@ -33,7 +33,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     fuse_reply_err(req, ENOSYS);
     return;
   }
-  auto context = tgfs_data::tgfs_ptr(req);
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
   tgfs_dir *parent_dir = context->lookup_dir(parent);
   if (parent_dir->contains(name)) {
     fuse_reply_err(req, EEXIST);
@@ -56,7 +56,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 
 void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                   struct fuse_file_info *fi) {
-  auto context = tgfs_data::tgfs_ptr(req);
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
   const tgfs_dir *dir = context->lookup_dir(ino);
   char buf[size];
   char *p = buf;
@@ -64,34 +64,34 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
   off_t nextoff = off;
   int err = 0;
 
-  while(true) {
+  while (true) {
     size_t entsize;
     const char *name;
     const std::pair<fuse_ino_t, std::string> *ent;
     ent = dir->next(off);
-    if(ent == nullptr) {
+    if (ent == nullptr) {
       break;
     }
     nextoff = ent->first;
     struct stat st;
     if (fstatat(context->get_root_fd(), std::to_string(ent->first).c_str(), &st,
-              AT_SYMLINK_NOFOLLOW) == -1) {
+                AT_SYMLINK_NOFOLLOW) == -1) {
       err = errno;
       break;
     }
     st.st_ino = ent->first;
     entsize = fuse_add_direntry(req, p, rem, ent->second.c_str(), &st, nextoff);
-    if(entsize > rem) {
+    if (entsize > rem) {
       break;
     }
     p += entsize;
     rem -= entsize;
   }
 
-  if(err != 0 && rem == size) {
+  if (err != 0 && rem == size) {
     fuse_reply_err(req, err);
     return;
-  } 
+  }
   fuse_reply_buf(req, buf, size - rem);
 }
 
@@ -114,7 +114,15 @@ void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 }
 
 void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-  // TODO
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  struct stat st;
+  if (fstatat(context->get_root_fd(), std::to_string(ino).c_str(), &st,
+              AT_SYMLINK_NOFOLLOW) == -1) {
+    fuse_reply_err(req, errno);
+    return;
+  }
+  st.st_ino = ino;
+  fuse_reply_attr(req, &st, context->get_timeout());
 }
 
 struct fuse_lowlevel_ops tgfs_opers = {
