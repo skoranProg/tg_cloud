@@ -5,9 +5,9 @@
 
 #include <map>
 #include <set>
-#include <utility>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 class tgfs_dir {
 private:
@@ -21,6 +21,7 @@ public:
   bool contains(fuse_ino_t ino);
   int add(const std::string &name, fuse_ino_t ino);
   fuse_ino_t lookup(const std::string &name);
+  const std::pair<fuse_ino_t, std::string> *next(fuse_ino_t ino) const;
 };
 
 #endif
