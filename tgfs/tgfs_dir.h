@@ -4,14 +4,16 @@
 #include "tgfs_fuse_dependencies.h"
 
 #include <map>
+#include <set>
+#include <utility>
 #include <string>
 #include <unordered_map>
 
 class tgfs_dir {
 private:
-  fuse_ino_t ino;
+  fuse_ino_t dino;
   std::unordered_map<std::string, fuse_ino_t> ftable;
-  std::map<fuse_ino_t, std::string> rev_ftable;
+  std::set<std::pair<fuse_ino_t, std::string>> rev_ftable;
 
 public:
   tgfs_dir(fuse_ino_t self, fuse_ino_t parent);

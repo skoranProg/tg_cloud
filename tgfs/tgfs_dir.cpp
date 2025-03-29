@@ -1,7 +1,7 @@
 #include "tgfs_dir.h"
 
 tgfs_dir::tgfs_dir(fuse_ino_t self, fuse_ino_t parent)
-    : ino{self}, ftable{}, rev_ftable{} {
+    : dino{self}, ftable{}, rev_ftable{} {
   ftable.emplace(".", self);
   rev_ftable.emplace(self, ".");
   ftable.emplace("..", parent);
@@ -13,7 +13,7 @@ bool tgfs_dir::contains(const std::string &name) {
 }
 
 bool tgfs_dir::contains(fuse_ino_t ino) {
-  return rev_ftable.contains(ino);
+  return (*rev_ftable.lower_bound(std::make_pair(ino, ""))).first == ino;
 }
 
 int tgfs_dir::add(const std::string &name, fuse_ino_t ino) {
@@ -29,5 +29,5 @@ fuse_ino_t tgfs_dir::lookup(const std::string &name) {
   if (!contains(name)) {
     return 0;
   }
-  return ftable[name];
+  return ftable.at(name);
 }

@@ -29,3 +29,5 @@ set_target_properties(tg_cloud
 
 add_subdirectory(td)
 target_link_libraries(tg_cloud PRIVATE Td::TdStatic)
+
+target_link_libraries(tg_cloud PRIVATE -lfuse3 -lpthread)
