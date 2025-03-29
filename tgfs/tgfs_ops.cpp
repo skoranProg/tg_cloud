@@ -7,7 +7,7 @@
 #include <sys/sysmacros.h>
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
-  auto context = tgfs_data::tgfs_ptr(req);
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
   tgfs_dir *parent_dir = context->lookup_dir(parent);
   if (!parent_dir->contains(name)) {
     fuse_reply_err(req, ENOENT);
@@ -33,7 +33,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     fuse_reply_err(req, ENOSYS);
     return;
   }
-  auto context = tgfs_data::tgfs_ptr(req);
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
   tgfs_dir *parent_dir = context->lookup_dir(parent);
   if (parent_dir->contains(name)) {
     fuse_reply_err(req, EEXIST);
@@ -56,21 +56,88 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 
 void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                   struct fuse_file_info *fi) {
-  // TODO
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  const tgfs_dir *dir = context->lookup_dir(ino);
+  char buf[size];
+  char *p = buf;
+  size_t rem = size;
+  off_t nextoff = off;
+  int err = 0;
+
+  while (true) {
+    size_t entsize;
+    const char *name;
+    const std::pair<fuse_ino_t, std::string> *ent;
+    ent = dir->next(off);
+    if (ent == nullptr) {
+      break;
+    }
+    nextoff = ent->first;
+    struct stat st;
+    if (fstatat(context->get_root_fd(), std::to_string(ent->first).c_str(), &st,
+                AT_SYMLINK_NOFOLLOW) == -1) {
+      err = errno;
+      break;
+    }
+    st.st_ino = ent->first;
+    entsize = fuse_add_direntry(req, p, rem, ent->second.c_str(), &st, nextoff);
+    if (entsize > rem) {
+      break;
+    }
+    p += entsize;
+    rem -= entsize;
+  }
+
+  if (err != 0 && rem == size) {
+    fuse_reply_err(req, err);
+    return;
+  }
+  fuse_reply_buf(req, buf, size - rem);
 }
 
 void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-  // TODO
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  int fd =
+      openat(context->get_root_fd(), std::to_string(ino).c_str(), fi->flags);
+  if (fd == -1) {
+    fuse_reply_err(req, errno);
+    return;
+  }
+  fi->fh = fd;
+  fi->direct_io = 1;
+  fuse_reply_open(req, fi);
 }
 
 void tgfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                struct fuse_file_info *fi) {
-  // TODO
+  struct fuse_bufvec buf = FUSE_BUFVEC_INIT(size);
+  buf.buf[0].flags =
+      static_cast<fuse_buf_flags>(FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK);
+  buf.buf[0].fd = fi->fh;
+  buf.buf[0].pos = off;
+  fuse_reply_data(req, &buf, FUSE_BUF_SPLICE_MOVE);
 }
 
-void tgfs_write(fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size,
-                off_t off, struct fuse_file_info *fi) {
-  // TODO
+void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
+                    off_t off, struct fuse_file_info *fi) {
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  size_t bufsize = fuse_buf_size(in_buf);
+  if (off + bufsize > context->get_max_filesize()) {
+    fuse_reply_err(req, EFBIG);
+    return;
+  }
+  struct fuse_bufvec out_buf = FUSE_BUFVEC_INIT(bufsize);
+  out_buf.buf[0].flags =
+      static_cast<fuse_buf_flags>(FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK);
+  out_buf.buf[0].fd = fi->fh;
+  out_buf.buf[0].pos = off;
+
+  ssize_t res =
+      fuse_buf_copy(&out_buf, in_buf, static_cast<fuse_buf_copy_flags>(0));
+  if (res < 0)
+    fuse_reply_err(req, errno);
+  else
+    fuse_reply_write(req, (size_t)res);
 }
 
 void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -78,7 +145,15 @@ void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 }
 
 void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-  // TODO
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  struct stat st;
+  if (fstatat(context->get_root_fd(), std::to_string(ino).c_str(), &st,
+              AT_SYMLINK_NOFOLLOW) == -1) {
+    fuse_reply_err(req, errno);
+    return;
+  }
+  st.st_ino = ino;
+  fuse_reply_attr(req, &st, context->get_timeout());
 }
 
 struct fuse_lowlevel_ops tgfs_opers = {
@@ -87,7 +162,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .mknod = tgfs_mknod,
     .open = tgfs_open,
     .read = tgfs_read,
-    .write = tgfs_write,
     .flush = tgfs_flush,
     .readdir = tgfs_readdir,
+    .write_buf = tgfs_write_buf,
 };

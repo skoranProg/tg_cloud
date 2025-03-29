@@ -8,11 +8,12 @@ std::unordered_map<fuse_ino_t, tgfs_dir> &tgfs_data::get_directories() {
   return directories;
 }
 
-tgfs_data::tgfs_data(double timeout, int root_fd, TdClass *tdclient)
-    : tdclient{tdclient}, timeout{timeout}, root_fd{root_fd}, last_version{},
-      messages{}, directories{} {
-        directories.try_emplace(FUSE_ROOT_ID, FUSE_ROOT_ID, FUSE_ROOT_ID);
-      }
+tgfs_data::tgfs_data(double timeout, int root_fd, size_t max_filesize,
+                     TdClass *tdclient)
+    : tdclient{tdclient}, timeout{timeout}, root_fd{root_fd},
+      max_filesize{max_filesize}, last_version{}, messages{}, directories{} {
+  directories.try_emplace(FUSE_ROOT_ID, FUSE_ROOT_ID, FUSE_ROOT_ID);
+}
 
 tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
   return reinterpret_cast<tgfs_data *>(fuse_req_userdata(req));
@@ -21,6 +22,8 @@ tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
 double tgfs_data::get_timeout() { return timeout; }
 
 int tgfs_data::get_root_fd() { return root_fd; }
+
+size_t tgfs_data::get_max_filesize() { return max_filesize; }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
   if (!get_messages().contains(ino)) {

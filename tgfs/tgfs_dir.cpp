@@ -2,8 +2,6 @@
 
 tgfs_dir::tgfs_dir(fuse_ino_t self, fuse_ino_t parent)
     : dino{self}, ftable{}, rev_ftable{} {
-  ftable.emplace(".", self);
-  rev_ftable.emplace(self, ".");
   ftable.emplace("..", parent);
   rev_ftable.emplace(parent, "..");
 }
@@ -30,4 +28,15 @@ fuse_ino_t tgfs_dir::lookup(const std::string &name) {
     return 0;
   }
   return ftable.at(name);
+}
+
+const std::pair<fuse_ino_t, std::string> *tgfs_dir::next(fuse_ino_t ino) const {
+    if(ino + 1 <= 0) {
+        return nullptr;
+    }
+    auto ub_iter = rev_ftable.lower_bound(std::make_pair(ino + 1, ""));
+    if(ub_iter == rev_ftable.end()) {
+        return nullptr;
+    }
+    return &(*ub_iter);
 }
