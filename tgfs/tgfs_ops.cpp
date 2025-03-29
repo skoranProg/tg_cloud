@@ -96,7 +96,15 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 }
 
 void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-  // TODO
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  int fd = openat(context->get_root_fd(), std::to_string(ino).c_str(), fi->flags);
+  if (fd == -1) {
+    fuse_reply_err(req, errno);
+    return;
+  }
+  fi->fh = fd;
+  fi->direct_io = 1;
+  fuse_reply_open(req, fi);
 }
 
 void tgfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
