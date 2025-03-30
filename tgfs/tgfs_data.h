@@ -5,6 +5,7 @@
 
 #include "../tdclient.h"
 #include "tgfs_dir.h"
+#include "tgfs_inode.h"
 
 class tgfs_data {
 private:
@@ -14,15 +15,11 @@ private:
   const size_t max_filesize;
   bool debug;
   // Only physically present(downloaded) files
-  std::unordered_map<fuse_ino_t, uint64_t> last_version; // ino -> msg_id
+  std::unordered_map<fuse_ino_t, tgfs_inode> inodes; // ino -> inode
   // All files on server
   std::unordered_map<fuse_ino_t, uint64_t> messages; // ino -> msg_id
-  // Physically present directories(their content might not be downloaded)
-  std::unordered_map<fuse_ino_t, tgfs_dir> directories; // ino -> ftable
 
   std::unordered_map<fuse_ino_t, uint64_t> &get_messages();
-
-  std::unordered_map<fuse_ino_t, tgfs_dir> &get_directories();
 
 public:
   tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
@@ -39,6 +36,8 @@ public:
   size_t get_max_filesize();
 
   uint64_t lookup_msg(fuse_ino_t ino);
+
+  tgfs_inode *lookup_inode(fuse_ino_t ino);
 
   tgfs_dir *lookup_dir(fuse_ino_t ino);
 

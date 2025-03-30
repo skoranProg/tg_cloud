@@ -12,16 +12,18 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
                      size_t max_filesize, TdClass *tdclient)
     : tdclient{tdclient}, debug{debug}, timeout{timeout}, root_fd{root_fd},
       max_filesize{max_filesize}, last_version{}, messages{}, directories{} {
-  directories.try_emplace(FUSE_ROOT_ID, FUSE_ROOT_ID, FUSE_ROOT_ID);
+  tgfs_dir root(FUSE_ROOT_ID, FUSE_ROOT_ID);
+  root.version = 0;
+  fstatat(root_fd, "", &root.attr, AT_EMPTY_PATH);
+  root.attr.st_ino = FUSE_ROOT_ID;
+  inodes.insert(FUSE_ROOT_ID, std::move(root));
 }
 
 tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
   return reinterpret_cast<tgfs_data *>(fuse_req_userdata(req));
 }
 
-bool tgfs_data::is_debug() {
-  return debug;
-}
+bool tgfs_data::is_debug() { return debug; }
 
 double tgfs_data::get_timeout() { return timeout; }
 
@@ -36,11 +38,19 @@ uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
   return get_messages().at(ino);
 }
 
-tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
-  if (!get_directories().contains(ino)) {
+tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
+  if (!get_messages().contains(ino)) {
     return nullptr;
   }
-  return &get_directories().at(ino);
+  return &inodes.at(ino);
+}
+
+tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
+  tgfs_inode *dir = lookup_inode(ino);
+  if (dir == nullptr || !S_ISDIR(dir->attr.st_mode)) {
+    return nullptr;
+  }
+  return reinterpret_cast<tgfs_dir *>(dir);
 }
 
 int tgfs_data::upload(fuse_ino_t ino) {
