@@ -18,7 +18,9 @@ add_executable(tg_cloud
         tgfs/tgfs_dir.cpp
         tgfs/tgfs_helpers.h
         tgfs/tgfs_helpers.cpp
-        )
+        td_helpers.h
+        td_helpers.cpp
+)
 
 set_target_properties(tg_cloud 
         PROPERTIES 
@@ -29,5 +31,8 @@ set_target_properties(tg_cloud
 
 add_subdirectory(td)
 target_link_libraries(tg_cloud PRIVATE Td::TdStatic)
+
+add_subdirectory(SQLiteCpp)
+target_link_libraries(tg_cloud PRIVATE SQLiteCpp)
 
 target_link_libraries(tg_cloud PRIVATE -lfuse3 -lpthread)

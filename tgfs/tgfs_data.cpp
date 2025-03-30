@@ -1,4 +1,5 @@
 #include "tgfs_data.h"
+#include "../td_helpers.h"
 
 std::unordered_map<fuse_ino_t, uint64_t> &tgfs_data::get_messages() {
   return messages;
@@ -6,6 +7,41 @@ std::unordered_map<fuse_ino_t, uint64_t> &tgfs_data::get_messages() {
 
 std::unordered_map<fuse_ino_t, tgfs_dir> &tgfs_data::get_directories() {
   return directories;
+}
+
+int tgfs_data::upload_table() {
+  /// TODO: handle errors
+
+  sqlite3 *db;
+  sqlite3_open("tmp.db", &db);
+  TableLoader loader(db);
+  loader.CreateSqlDB();
+  loader.LoadInTable(messages);
+  auto res = loader.LoadTable();
+  sqlite3_close(db);
+  tdclient->SendFile(tdclient->GetMainChatId(), "tmp.db");
+  tdclient->PinMessage(tdclient->GetMainChatId(), tdclient->GetLastMessage(tdclient->GetMainChatId())->id_);
+  std::filesystem::remove("tmp.db");
+  return 0;
+}
+
+int tgfs_data::update_table() {
+
+  /// TODO: handle errors
+
+  auto last_mes = tdclient->GetLastPinnedMessage(tdclient->GetMainChatId());
+  auto td_file = td::move_tl_object_as<td_api::messageDocument>(last_mes->content_);
+  auto dw_file = tdclient->DownloadFile(td_file->document_->document_->id_);
+  std::string path = dw_file->local_->path_;
+  sqlite3 *db;
+  sqlite3_open(path.c_str(), &db);
+  TableLoader loader(db);
+  messages = loader.LoadTable();
+  sqlite3_close(db);
+  std::filesystem::remove(dw_file->local_->path_);
+
+  return 0;
+
 }
 
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,

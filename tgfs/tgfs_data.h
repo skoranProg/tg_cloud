@@ -24,6 +24,10 @@ private:
 
   std::unordered_map<fuse_ino_t, tgfs_dir> &get_directories();
 
+  int upload_table();
+
+  int update_table();
+
 public:
   tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
             TdClass *tdclient);
