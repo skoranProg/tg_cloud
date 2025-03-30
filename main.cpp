@@ -7,7 +7,6 @@
 
 /// TODO: Implement multithread process_update
 
-// ./tg_cloud  -f /home/marat/fs_1
 #include <iostream>
 #include <string.h>
 #include <sqlite3.h>
