@@ -8,18 +8,34 @@
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
   tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+  if (context->is_debug()) {
+    fuse_log(FUSE_LOG_DEBUG, "Func: lookup\n\tparent: %d\n\tname:%s\n", parent,
+             name);
+  }
+
   tgfs_dir *parent_dir = context->lookup_dir(parent);
   if (!parent_dir->contains(name)) {
     fuse_reply_err(req, ENOENT);
     return;
   }
+
   struct fuse_entry_param e = {
       .ino = parent_dir->lookup(name),
       .attr_timeout = context->get_timeout(),
       .entry_timeout = context->get_timeout(),
   };
-  if (fstatat(context->get_root_fd(), std::to_string(e.ino).c_str(), &e.attr,
-              AT_SYMLINK_NOFOLLOW) == -1) {
+
+  std::string local_fname;
+
+  if (e.ino == FUSE_ROOT_ID) {
+    local_fname = "";
+  } else {
+    local_fname = std::to_string(e.ino);
+  }
+
+  if (fstatat(context->get_root_fd(), local_fname.c_str(), &e.attr,
+              AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH) == -1) {
     fuse_reply_err(req, errno);
     return;
   }
@@ -34,14 +50,22 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     return;
   }
   tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+  if (context->is_debug()) {
+    fuse_log(FUSE_LOG_DEBUG, "Func: mknod\n\tparent: %d\n\tname:%s\n", parent,
+             name);
+  }
+
   tgfs_dir *parent_dir = context->lookup_dir(parent);
   if (parent_dir->contains(name)) {
     fuse_reply_err(req, EEXIST);
     return;
   }
-  fuse_ino_t nod_ino = get_new_ino(req);
-  if (mknodat(context->get_root_fd(), std::to_string(nod_ino).c_str(), mode,
-              rdev) == -1) {
+  fuse_ino_t nod_ino = get_new_ino(*context);
+
+  std::string local_fname = std::to_string(nod_ino);
+
+  if (mknodat(context->get_root_fd(), local_fname.c_str(), mode, rdev) == -1) {
     fuse_reply_err(req, errno);
     return;
   }
@@ -52,11 +76,31 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
   if (context->upload(parent) != 0) {
     // TODO : handle exception
   }
+
+  struct fuse_entry_param e = {
+      .ino = parent_dir->lookup(name),
+      .attr_timeout = context->get_timeout(),
+      .entry_timeout = context->get_timeout(),
+  };
+
+  if (fstatat(context->get_root_fd(), local_fname.c_str(), &e.attr, 0) == -1) {
+    fuse_reply_err(req, errno);
+    return;
+  }
+  e.attr.st_ino = e.ino;
+  fuse_reply_entry(req, &e);
 }
 
 void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                   struct fuse_file_info *fi) {
   tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+  if (context->is_debug()) {
+    fuse_log(FUSE_LOG_DEBUG,
+             "Func: readdir\n\tinode: %d\n\tsize: %d\n\toffset: %d\n", ino,
+             size, off);
+  }
+
   const tgfs_dir *dir = context->lookup_dir(ino);
   char buf[size];
   char *p = buf;
@@ -64,18 +108,27 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
   off_t nextoff = off;
   int err = 0;
 
+  std::string local_fname;
+
   while (true) {
     size_t entsize;
     const char *name;
     const std::pair<fuse_ino_t, std::string> *ent;
-    ent = dir->next(off);
+    ent = dir->next(nextoff);
     if (ent == nullptr) {
       break;
     }
     nextoff = ent->first;
+
+    if (ent->first == FUSE_ROOT_ID) {
+      local_fname = "";
+    } else {
+      local_fname = std::to_string(ent->first);
+    }
+
     struct stat st;
-    if (fstatat(context->get_root_fd(), std::to_string(ent->first).c_str(), &st,
-                AT_SYMLINK_NOFOLLOW) == -1) {
+    if (fstatat(context->get_root_fd(), local_fname.c_str(), &st,
+                AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH) == -1) {
       err = errno;
       break;
     }
@@ -141,14 +194,34 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
 }
 
 void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-  // TODO
+  tgfs_data *context = tgfs_data::tgfs_ptr(req);
+  int err = context->upload(ino);
+  fuse_reply_err(req, err);
+}
+
+void tgfs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
+  int err = close(fi->fh);
+  fuse_reply_err(req, err);
 }
 
 void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
   tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+  if (context->is_debug()) {
+    fuse_log(FUSE_LOG_DEBUG, "Func: getattr\n\tinode: %d\n", ino);
+  }
+
+  std::string local_fname;
+
+  if (ino == FUSE_ROOT_ID) {
+    local_fname = "";
+  } else {
+    local_fname = std::to_string(ino);
+  }
+
   struct stat st;
-  if (fstatat(context->get_root_fd(), std::to_string(ino).c_str(), &st,
-              AT_SYMLINK_NOFOLLOW) == -1) {
+  if (fstatat(context->get_root_fd(), local_fname.c_str(), &st,
+              AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH) == -1) {
     fuse_reply_err(req, errno);
     return;
   }
@@ -163,6 +236,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .open = tgfs_open,
     .read = tgfs_read,
     .flush = tgfs_flush,
+    .release = tgfs_release,
     .readdir = tgfs_readdir,
     .write_buf = tgfs_write_buf,
 };
