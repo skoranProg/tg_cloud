@@ -1,3 +1,6 @@
 /td/
 /build/
 /.vscode/
+/cmake-build-debug/
+/.idea/
+/.clang-tidy/

@@ -11,3 +11,4 @@ fuse_ino_t get_new_ino(tgfs_data &context) {
   }
   return res;
 }
+

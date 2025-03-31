@@ -3,7 +3,7 @@
 
 #include "tgfs_fuse_dependencies.h"
 
-#include "../tdclient.h"
+#include "../tgcl/tdclient.h"
 #include "tgfs_dir.h"
 
 class tgfs_data {

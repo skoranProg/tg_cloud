@@ -220,11 +220,11 @@ td_api::int53 TdClass::GetChatId(const std::string& username) {
 }
 
 void TdClass::SetMainChatId(const std::string &username) {
-    main_chat_id = GetChatId(username);
+    main_chat_id_ = GetChatId(username);
 }
 
 td_api::int53 TdClass::GetMainChatId() const {
-    return main_chat_id;
+    return main_chat_id_;
 }
 
 void TdClass::Restart()  {

@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(tg_cloud 
         main.cpp
-        tdclient.h
-        tdclient.cpp
+        tgcl/tdclient.h
+        tgcl/tdclient.cpp
 
         tgfs/tgfs.h
         tgfs/tgfs_fuse_dependencies.h
@@ -18,8 +18,10 @@ add_executable(tg_cloud
         tgfs/tgfs_dir.cpp
         tgfs/tgfs_helpers.h
         tgfs/tgfs_helpers.cpp
-        td_helpers.h
-        td_helpers.cpp
+        tgcl/td_helpers.h
+        tgcl/td_helpers.cpp
+        tgcl/test.h
+        tgcl/test.cpp
 )
 
 set_target_properties(tg_cloud 

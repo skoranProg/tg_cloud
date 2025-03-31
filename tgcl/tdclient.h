@@ -1,8 +1,8 @@
 #pragma once
 
-#include <td/telegram/Client.h>
-#include <td/telegram/td_api.h>
-#include <td/telegram/td_api.hpp>
+#include <../td/td/telegram/Client.h>
+#include <../td/td/generate/auto/td/telegram/td_api.h>
+#include <../td/td/generate/auto/td/telegram/td_api.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -81,9 +81,9 @@ private:
     std::uint64_t current_query_id_{0};
     std::uint64_t authentication_query_id_{0};
     bool are_alive_{true};
-    td_api::int53 main_chat_id{0};
+    td_api::int53 main_chat_id_{0};
 
-    std::map<std::uint64_t, std::function<void(Object)>> handlers_;
+    std::unordered_map<std::uint64_t, std::function<void(Object)>> handlers_;
     std::unordered_map<std::int64_t, int> completed_uploads_;
     std::unordered_map<std::int64_t, int> completed_downloads_;
 
