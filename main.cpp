@@ -1,4 +1,4 @@
-#include "tdclient.h"
+#include "tgcl/tdclient.h"
 
 #include "tgfs/tgfs.h"
 #include "tgfs/tgfs_data.h"
