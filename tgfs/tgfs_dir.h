@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <utility>
 
-class tgfs_dir : private tgfs_inode {
+class tgfs_dir : public tgfs_inode {
   private:
     std::unordered_map<std::string, fuse_ino_t> ftable;
     std::set<std::pair<fuse_ino_t, std::string>> rev_ftable;
