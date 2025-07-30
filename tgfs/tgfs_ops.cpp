@@ -20,26 +20,14 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
         return;
     }
 
+    fuse_ino_t ino = parent_dir->lookup(name);
     struct fuse_entry_param e = {
-        .ino = parent_dir->lookup(name),
+        .ino = ino,
+        .attr = context->lookup_inode(ino)->get_attr(),
         .attr_timeout = context->get_timeout(),
         .entry_timeout = context->get_timeout(),
     };
 
-    std::string local_fname;
-
-    if (e.ino == FUSE_ROOT_ID) {
-        local_fname = "";
-    } else {
-        local_fname = std::to_string(e.ino);
-    }
-
-    if (fstatat(context->get_root_fd(), local_fname.c_str(), &e.attr,
-                AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH) == -1) {
-        fuse_reply_err(req, errno);
-        return;
-    }
-    e.attr.st_ino = e.ino;
     fuse_reply_entry(req, &e);
 }
 
