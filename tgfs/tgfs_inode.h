@@ -10,9 +10,9 @@
 #include "tgfs_fuse_dependencies.h"
 
 class tgfs_inode {
-public:
-  struct stat attr;
-  uint64_t version;
+  public:
+    struct stat attr;
+    uint64_t version;
 };
 
 #endif
