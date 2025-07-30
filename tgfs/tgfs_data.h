@@ -14,9 +14,13 @@ class tgfs_data {
     const int root_fd;
     const size_t max_filesize;
     bool debug;
+
     // Only physically present(downloaded) files
-    std::unordered_map<fuse_ino_t, tgfs_inode> inodes; // ino -> inode
+    // May contain outdated information
+    std::unordered_map<fuse_ino_t, tgfs_inode *> inodes; // ino -> inode
+
     // All files on server
+    // Must always be up-to-date(which means sync of whole table before each call)
     std::unordered_map<fuse_ino_t, uint64_t> messages; // ino -> msg_id
 
     std::unordered_map<fuse_ino_t, uint64_t> &get_messages();

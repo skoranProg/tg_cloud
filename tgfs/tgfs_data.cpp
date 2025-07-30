@@ -42,12 +42,18 @@ tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
     if (!get_messages().contains(ino)) {
         return nullptr;
     }
-    return &inodes.at(ino);
+    return inodes.at(ino);
 }
 
 tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
     tgfs_inode *dir = lookup_inode(ino);
-    if (dir == nullptr || !S_ISDIR(dir->attr.st_mode)) {
+    if (dir == nullptr) {
+        return nullptr;
+    }
+    if (!S_ISDIR(dir->get_attr().st_mode)) {
+        // TODO: Send error info
+        //       Exception perhaps ?
+        //       Or just set errno ?
         return nullptr;
     }
     return reinterpret_cast<tgfs_dir *>(dir);

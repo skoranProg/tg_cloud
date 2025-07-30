@@ -11,8 +11,16 @@
 
 class tgfs_inode {
   public:
-    struct stat attr;
-    uint64_t version;
+    struct stat get_attr();
+    void set_attr(struct stat attr);
+
+    uint64_t get_version();
+    void set_version(uint64_t version);
+
+    tgfs_inode(struct stat attr, uint64_t version);
+  private:
+    struct stat attr_;
+    uint64_t version_;
 };
 
 #endif
