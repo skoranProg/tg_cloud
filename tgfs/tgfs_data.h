@@ -20,9 +20,12 @@ class tgfs_data {
     std::unordered_map<fuse_ino_t, tgfs_inode *> inodes; // ino -> inode
 
     // All files on server
-    // Must always be up-to-date(which means sync of whole table before each call)
+    // Must always be up-to-date(which means sync of whole table before each
+    // call)
     std::unordered_map<fuse_ino_t, uint64_t> messages; // ino -> msg_id
 
+    // Canonical way to address the table.
+    // Should syncs before return.
     std::unordered_map<fuse_ino_t, uint64_t> &get_messages();
 
   public:
@@ -46,6 +49,8 @@ class tgfs_data {
     tgfs_dir *lookup_dir(fuse_ino_t ino);
 
     int upload(fuse_ino_t ino);
+    int upload(tgfs_inode *ino);
+
     int update(fuse_ino_t ino);
 };
 

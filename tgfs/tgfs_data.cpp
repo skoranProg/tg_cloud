@@ -1,11 +1,8 @@
 #include "tgfs_data.h"
 
 std::unordered_map<fuse_ino_t, uint64_t> &tgfs_data::get_messages() {
+    // TODO: Sync the table
     return messages;
-}
-
-std::unordered_map<fuse_ino_t, tgfs_dir> &tgfs_data::get_directories() {
-    return directories;
 }
 
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
@@ -62,6 +59,11 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 int tgfs_data::upload(fuse_ino_t ino) {
     // TODO
     return 0;
+}
+
+int tgfs_data::upload(tgfs_inode *ino) {
+    inodes[ino->get_attr().st_ino] = ino;
+    return upload(ino->get_attr().st_ino);
 }
 
 int tgfs_data::update(fuse_ino_t ino) {

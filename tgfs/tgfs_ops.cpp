@@ -61,35 +61,46 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         fuse_reply_err(req, EEXIST);
         return;
     }
-    fuse_ino_t nod_ino = get_new_ino(*context);
 
-    std::string local_fname = std::to_string(nod_ino);
+    tgfs_inode *ino_obj =
+        new tgfs_inode((struct stat){.st_dev = rdev,
+                                     .st_ino = get_new_ino(*context),
+                                     .st_nlink = 1,
+                                     .st_mode = mode,
+                                     .st_uid = 0,
+                                     .st_gid = 0,
+                                     .st_rdev = 0,
+                                     .st_size = 0,
+                                     .st_blksize = 0,
+                                     .st_blocks = 1,
+                                     .st_atim = {},
+                                     .st_mtim = {},
+                                     .st_ctim = {}},
+                       (uint64_t)0);
+
+    std::string local_fname = std::to_string(ino_obj->get_attr().st_ino);
 
     if (mknodat(context->get_root_fd(), local_fname.c_str(), mode, rdev) ==
         -1) {
+        delete ino_obj;
         fuse_reply_err(req, errno);
         return;
     }
-    if (context->upload(nod_ino) != 0) {
+    if (context->upload(ino_obj) != 0) {
         // TODO : handle exception
     }
-    parent_dir->add(name, nod_ino);
+    parent_dir->add(name, ino_obj->get_attr().st_ino);
     if (context->upload(parent) != 0) {
         // TODO : handle exception
     }
 
     struct fuse_entry_param e = {
-        .ino = parent_dir->lookup(name),
+        .ino = ino_obj->get_attr().st_ino,
         .attr_timeout = context->get_timeout(),
         .entry_timeout = context->get_timeout(),
     };
 
-    if (fstatat(context->get_root_fd(), local_fname.c_str(), &e.attr, 0) ==
-        -1) {
-        fuse_reply_err(req, errno);
-        return;
-    }
-    e.attr.st_ino = e.ino;
+    e.attr = ino_obj->get_attr();
     fuse_reply_entry(req, &e);
 }
 

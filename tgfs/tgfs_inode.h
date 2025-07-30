@@ -18,6 +18,7 @@ class tgfs_inode {
     void set_version(uint64_t version);
 
     tgfs_inode(struct stat attr, uint64_t version);
+
   private:
     struct stat attr_;
     uint64_t version_;
