@@ -213,21 +213,7 @@ void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
         fuse_log(FUSE_LOG_DEBUG, "Func: getattr\n\tinode: %d\n", ino);
     }
 
-    std::string local_fname;
-
-    if (ino == FUSE_ROOT_ID) {
-        local_fname = "";
-    } else {
-        local_fname = std::to_string(ino);
-    }
-
-    struct stat st;
-    if (fstatat(context->get_root_fd(), local_fname.c_str(), &st,
-                AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH) == -1) {
-        fuse_reply_err(req, errno);
-        return;
-    }
-    st.st_ino = ino;
+    struct stat st = context->lookup_inode(ino)->get_attr();
     fuse_reply_attr(req, &st, context->get_timeout());
 }
 
