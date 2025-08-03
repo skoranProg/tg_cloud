@@ -107,9 +107,6 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     char *p = buf;
     size_t rem = size;
     off_t nextoff = off;
-    int err = 0;
-
-    std::string local_fname;
 
     while (true) {
         size_t entsize;
@@ -121,19 +118,7 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
         }
         nextoff = ent->first;
 
-        if (ent->first == FUSE_ROOT_ID) {
-            local_fname = "";
-        } else {
-            local_fname = std::to_string(ent->first);
-        }
-
-        struct stat st;
-        if (fstatat(context->get_root_fd(), local_fname.c_str(), &st,
-                    AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH) == -1) {
-            err = errno;
-            break;
-        }
-        st.st_ino = ent->first;
+        struct stat st = context->lookup_inode(ent->first)->get_attr();
         entsize =
             fuse_add_direntry(req, p, rem, ent->second.c_str(), &st, nextoff);
         if (entsize > rem) {
@@ -143,10 +128,6 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
         rem -= entsize;
     }
 
-    if (err != 0 && rem == size) {
-        fuse_reply_err(req, err);
-        return;
-    }
     fuse_reply_buf(req, buf, size - rem);
 }
 
