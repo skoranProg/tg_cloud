@@ -34,13 +34,13 @@ class tgfs_data {
 
     static tgfs_data *tgfs_ptr(fuse_req_t req);
 
-    bool is_debug();
+    bool is_debug() const;
 
-    double get_timeout();
+    double get_timeout() const;
 
-    int get_root_fd();
+    int get_root_fd() const;
 
-    size_t get_max_filesize();
+    size_t get_max_filesize() const;
 
     uint64_t lookup_msg(fuse_ino_t ino);
 

@@ -50,34 +50,35 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         return;
     }
 
-    tgfs_inode *ino_obj =
-        new tgfs_inode((struct stat){.st_dev = rdev,
-                                     .st_ino = get_new_ino(*context),
-                                     .st_nlink = 1,
-                                     .st_mode = mode,
-                                     .st_uid = 0,
-                                     .st_gid = 0,
-                                     .st_rdev = 0,
-                                     .st_size = 0,
-                                     .st_blksize = 0,
-                                     .st_blocks = 1,
-                                     .st_atim = {},
-                                     .st_mtim = {},
-                                     .st_ctim = {}},
-                       (uint64_t)0);
+    fuse_ino_t ino = get_new_ino(*context);
 
-    std::string local_fname = std::to_string(ino_obj->get_attr().st_ino);
-
-    if (mknodat(context->get_root_fd(), local_fname.c_str(), mode, rdev) ==
-        -1) {
-        delete ino_obj;
+    std::string local_fname = std::to_string(ino);
+    if (mknodat(context->get_root_fd(), local_fname.c_str(), mode | 0777,
+                rdev) == -1) {
         fuse_reply_err(req, errno);
         return;
     }
+
+    tgfs_inode *ino_obj = map_inode(*context, ino);
+    new (ino_obj) tgfs_inode((struct stat){.st_dev = rdev,
+                                           .st_ino = ino,
+                                           .st_nlink = 1,
+                                           .st_mode = mode,
+                                           .st_uid = 0,
+                                           .st_gid = 0,
+                                           .st_rdev = 0,
+                                           .st_size = 0,
+                                           .st_blksize = 0,
+                                           .st_blocks = 1,
+                                           .st_atim = {},
+                                           .st_mtim = {},
+                                           .st_ctim = {}},
+                             (uint64_t)0);
+
     if (context->upload(ino_obj) != 0) {
         // TODO : handle exception
     }
-    parent_dir->add(name, ino_obj->get_attr().st_ino);
+    parent_dir->add(name, ino);
     if (context->upload(parent) != 0) {
         // TODO : handle exception
     }

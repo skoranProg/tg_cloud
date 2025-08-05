@@ -20,13 +20,13 @@ tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
     return reinterpret_cast<tgfs_data *>(fuse_req_userdata(req));
 }
 
-bool tgfs_data::is_debug() { return debug; }
+bool tgfs_data::is_debug() const { return debug; }
 
-double tgfs_data::get_timeout() { return timeout; }
+double tgfs_data::get_timeout() const { return timeout; }
 
-int tgfs_data::get_root_fd() { return root_fd; }
+int tgfs_data::get_root_fd() const { return root_fd; }
 
-size_t tgfs_data::get_max_filesize() { return max_filesize; }
+size_t tgfs_data::get_max_filesize() const { return max_filesize; }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
     if (!get_messages().contains(ino)) {
