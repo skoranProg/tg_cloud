@@ -307,5 +307,3 @@ void TdClass::CheckAuthenticationError(Object object) {
 std::uint64_t TdClass::NextQueryId() {
     return ++current_query_id_;
 }
-
-
