@@ -2,9 +2,10 @@
 #include "tgfs_helpers.h"
 
 #include "errno.h"
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/sysmacros.h>
+#include "fcntl.h"
+#include "sys/stat.h"
+#include "sys/sysmacros.h"
+#include "unistd.h"
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
@@ -59,7 +60,15 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         return;
     }
 
-    tgfs_inode *ino_obj = map_inode(*context, ino);
+    int fd = openat(context.get_root_fd(), local_fname.c_str(), O_RDWR);
+    {
+        char buf[sizeof(tgfs_inode)];
+        write(fd, buf, sizeof(tgfs_inode));
+    }
+    tgfs_inode *ino_obj = reinterpret_cast<tgfs_inode *>(mmap(
+        NULL, sizeof(tgfs_inode), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+    close(fd);
+
     new (ino_obj) tgfs_inode((struct stat){.st_dev = rdev,
                                            .st_ino = ino,
                                            .st_nlink = 1,
