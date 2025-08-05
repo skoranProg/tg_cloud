@@ -33,7 +33,7 @@ uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
 }
 
 tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
-    if (!get_messages().contains(ino)) {
+    if (!inodes.contains(ino)) {
         return nullptr;
     }
     return inodes.at(ino);
