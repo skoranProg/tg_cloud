@@ -3,6 +3,7 @@
 
 #include "errno.h"
 #include "fcntl.h"
+#include "sys/mman.h"
 #include "sys/stat.h"
 #include "sys/sysmacros.h"
 #include "unistd.h"
@@ -60,7 +61,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         return;
     }
 
-    int fd = openat(context.get_root_fd(), local_fname.c_str(), O_RDWR);
+    int fd = openat(context->get_root_fd(), local_fname.c_str(), O_RDWR);
     {
         char buf[sizeof(tgfs_inode)];
         write(fd, buf, sizeof(tgfs_inode));
