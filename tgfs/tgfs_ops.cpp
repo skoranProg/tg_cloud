@@ -146,6 +146,7 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 
 void tgfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                struct fuse_file_info *fi) {
+    off += sizeof(tgfs_inode);
     struct fuse_bufvec buf = FUSE_BUFVEC_INIT(size);
     buf.buf[0].flags =
         static_cast<fuse_buf_flags>(FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK);
@@ -156,6 +157,7 @@ void tgfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
                     off_t off, struct fuse_file_info *fi) {
+    off += sizeof(tgfs_inode);
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
     size_t bufsize = fuse_buf_size(in_buf);
     if (off + bufsize > context->get_max_filesize()) {
