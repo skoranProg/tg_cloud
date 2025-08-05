@@ -8,12 +8,9 @@ std::unordered_map<fuse_ino_t, uint64_t> &tgfs_data::get_messages() {
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
                      size_t max_filesize, TdClass *tdclient)
     : tdclient{tdclient}, debug{debug}, timeout{timeout}, root_fd{root_fd},
-      max_filesize{max_filesize}, last_version{}, messages{}, directories{} {
-    tgfs_dir root(FUSE_ROOT_ID, FUSE_ROOT_ID);
-    root.version = 0;
-    fstatat(root_fd, "", &root.attr, AT_EMPTY_PATH);
-    root.attr.st_ino = FUSE_ROOT_ID;
-    inodes.insert(FUSE_ROOT_ID, std::move(root));
+      max_filesize{max_filesize}, inodes{}, messages{} {
+    tgfs_dir *root = new tgfs_dir(FUSE_ROOT_ID, FUSE_ROOT_ID);
+    inodes.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
 }
 
 tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
