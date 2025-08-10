@@ -215,9 +215,73 @@ void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     fuse_reply_attr(req, &st, context->get_timeout());
 }
 
+void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
+                  struct fuse_file_info *fi) {
+    tgfs_data *context = tgfs_data::tgfs_ptr(req);
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
+    struct stat new_attr = ino_obj->get_attr();
+    if (to_set & FUSE_SET_ATTR_MODE) {
+        new_attr.st_mode = attr->st_mode;
+    }
+    if (to_set & FUSE_SET_ATTR_UID) {
+        new_attr.st_uid = attr->st_uid;
+    }
+    if (to_set & FUSE_SET_ATTR_GID) {
+        new_attr.st_gid = attr->st_gid;
+    }
+    if (to_set & FUSE_SET_ATTR_SIZE) {
+        if (fi != NULL) {
+            ftruncate(fi->fh, sizeof(tgfs_inode) + attr->st_size);
+        }
+        new_attr.st_size = attr->st_size;
+    }
+    if (to_set & FUSE_SET_ATTR_ATIME) {
+        new_attr.st_atim = attr->st_atim;
+    }
+    if (to_set & FUSE_SET_ATTR_MTIME) {
+        new_attr.st_mtim = attr->st_mtim;
+    }
+    if (to_set & FUSE_SET_ATTR_ATIME_NOW) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_MTIME_NOW) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_FORCE) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_CTIME) {
+        new_attr.st_ctim = attr->st_ctim;
+    }
+    if (to_set & FUSE_SET_ATTR_KILL_SUID) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_KILL_SGID) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_FILE) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_KILL_PRIV) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_OPEN) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_TIMES_SET) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_TOUCH) {
+        // TODO
+    }
+    ino_obj->set_attr(new_attr);
+    fuse_reply_attr(req, &new_attr, context->get_timeout());
+}
+
 struct fuse_lowlevel_ops tgfs_opers = {
     .lookup = tgfs_lookup,
     .getattr = tgfs_getattr,
+    .setattr = tgfs_setattr,
     .mknod = tgfs_mknod,
     .open = tgfs_open,
     .read = tgfs_read,
