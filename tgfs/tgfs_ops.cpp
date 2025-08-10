@@ -196,9 +196,9 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
     else {
         tgfs_inode *ino_obj = context->lookup_inode(ino);
         struct stat attr = ino_obj->get_attr();
-        attr.st_size = max(attr.st_size, static_cast<off_t>(off + res));
+        attr.st_size = std::max(attr.st_size, static_cast<off_t>(off + res));
         clock_gettime(CLOCK_REALTIME, &(attr.st_mtim));
-        ino_obj->set_attr(ino_obj);
+        ino_obj->set_attr(attr);
         fuse_reply_write(req, (size_t)res);
     }
 }
