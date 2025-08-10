@@ -70,20 +70,31 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         NULL, sizeof(tgfs_inode), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
     close(fd);
 
-    new (ino_obj) tgfs_inode((struct stat){.st_dev = rdev,
-                                           .st_ino = ino,
-                                           .st_nlink = 1,
-                                           .st_mode = mode,
-                                           .st_uid = 0,
-                                           .st_gid = 0,
-                                           .st_rdev = 0,
-                                           .st_size = 0,
-                                           .st_blksize = 0,
-                                           .st_blocks = 1,
-                                           .st_atim = {},
-                                           .st_mtim = {},
-                                           .st_ctim = {}},
-                             (uint64_t)0);
+    struct fuse_entry_param e = {
+        .ino = ino,
+        .attr =
+            {
+                .st_dev = rdev,
+                .st_ino = ino,
+                .st_nlink = 1,
+                .st_mode = mode,
+                .st_uid = 0,
+                .st_gid = 0,
+                .st_rdev = 0,
+                .st_size = 0,
+                .st_blksize = 0,
+                .st_blocks = 1,
+                .st_atim = {},
+                .st_mtim = {},
+                .st_ctim = {},
+            },
+        .attr_timeout = context->get_timeout(),
+        .entry_timeout = context->get_timeout(),
+    };
+    clock_gettime(CLOCK_REALTIME, &(e.attr.st_atim));
+    e.attr.st_mtim = e.attr.st_atim;
+    e.attr.st_ctim = e.attr.st_atim;
+    new (ino_obj) tgfs_inode(e.attr, (uint64_t)0);
 
     if (context->upload(ino_obj) != 0) {
         // TODO : handle exception
@@ -93,13 +104,6 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         // TODO : handle exception
     }
 
-    struct fuse_entry_param e = {
-        .ino = ino_obj->get_attr().st_ino,
-        .attr_timeout = context->get_timeout(),
-        .entry_timeout = context->get_timeout(),
-    };
-
-    e.attr = ino_obj->get_attr();
     fuse_reply_entry(req, &e);
 }
 
@@ -189,8 +193,14 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
         fuse_buf_copy(&out_buf, in_buf, static_cast<fuse_buf_copy_flags>(0));
     if (res < 0)
         fuse_reply_err(req, errno);
-    else
+    else {
+        tgfs_inode *ino_obj = context->lookup_inode(ino);
+        struct stat attr = ino_obj->get_attr();
+        attr.st_size = max(attr.st_size, static_cast<off_t>(off + res));
+        clock_gettime(CLOCK_REALTIME, &(attr.st_mtim));
+        ino_obj->set_attr(ino_obj);
         fuse_reply_write(req, (size_t)res);
+    }
 }
 
 void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
