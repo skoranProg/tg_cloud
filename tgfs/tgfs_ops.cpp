@@ -12,7 +12,7 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: lookup\n\tparent: %d\n\tname:%s\n",
+        fuse_log(FUSE_LOG_DEBUG, "Func: lookup\n\tparent: %u\n\tname:%s\n",
                  parent, name);
     }
 
@@ -42,7 +42,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: mknod\n\tparent: %d\n\tname:%s\n",
+        fuse_log(FUSE_LOG_DEBUG, "Func: mknod\n\tparent: %u\n\tname:%s\n",
                  parent, name);
     }
 
@@ -113,7 +113,7 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
     if (context->is_debug()) {
         fuse_log(FUSE_LOG_DEBUG,
-                 "Func: readdir\n\tinode: %d\n\tsize: %d\n\toffset: %d\n", ino,
+                 "Func: readdir\n\tinode: %u\n\tsize: %u\n\toffset: %u\n", ino,
                  size, off);
     }
 
@@ -218,7 +218,7 @@ void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: getattr\n\tinode: %d\n", ino);
+        fuse_log(FUSE_LOG_DEBUG, "Func: getattr\n\tinode: %u\n", ino);
     }
 
     struct stat st = context->lookup_inode(ino)->get_attr();
@@ -228,27 +228,68 @@ void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
                   struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "Func: setattr\n\tinode: %u\n\tto_set: %06o\n",
+                 ino, to_set);
+    }
+
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     struct stat new_attr = ino_obj->get_attr();
     if (to_set & FUSE_SET_ATTR_MODE) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tmode: %07o\n", attr->st_mode);
+        }
+
         new_attr.st_mode = attr->st_mode;
     }
     if (to_set & FUSE_SET_ATTR_UID) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tuid: %07o\n", attr->st_uid);
+        }
+
         new_attr.st_uid = attr->st_uid;
     }
     if (to_set & FUSE_SET_ATTR_GID) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tgid: %07o\n", attr->st_gid);
+        }
+
         new_attr.st_gid = attr->st_gid;
     }
     if (to_set & FUSE_SET_ATTR_SIZE) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tsize: %u\n", attr->st_size);
+        }
+
         if (fi != NULL) {
+
+            if (context->is_debug()) {
+                fuse_log(FUSE_LOG_DEBUG, "\ttruncate fd: %u\n", fi->fh);
+            }
+
             ftruncate(fi->fh, sizeof(tgfs_inode) + attr->st_size);
         }
         new_attr.st_size = attr->st_size;
     }
     if (to_set & FUSE_SET_ATTR_ATIME) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tatim\n");
+        }
+
         new_attr.st_atim = attr->st_atim;
     }
     if (to_set & FUSE_SET_ATTR_MTIME) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tmtim\n");
+        }
+
         new_attr.st_mtim = attr->st_mtim;
     }
     if (to_set & FUSE_SET_ATTR_ATIME_NOW) {
@@ -261,6 +302,11 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
         // TODO
     }
     if (to_set & FUSE_SET_ATTR_CTIME) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tctim\n");
+        }
+
         new_attr.st_ctim = attr->st_ctim;
     }
     if (to_set & FUSE_SET_ATTR_KILL_SUID) {
