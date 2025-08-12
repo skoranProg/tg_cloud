@@ -12,7 +12,7 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: lookup\n\tparent: %d\n\tname:%s\n",
+        fuse_log(FUSE_LOG_DEBUG, "Func: lookup\n\tparent: %u\n\tname:%s\n",
                  parent, name);
     }
 
@@ -42,7 +42,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: mknod\n\tparent: %d\n\tname:%s\n",
+        fuse_log(FUSE_LOG_DEBUG, "Func: mknod\n\tparent: %u\n\tname:%s\n",
                  parent, name);
     }
 
@@ -70,20 +70,31 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         NULL, sizeof(tgfs_inode), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
     close(fd);
 
-    new (ino_obj) tgfs_inode((struct stat){.st_dev = rdev,
-                                           .st_ino = ino,
-                                           .st_nlink = 1,
-                                           .st_mode = mode,
-                                           .st_uid = 0,
-                                           .st_gid = 0,
-                                           .st_rdev = 0,
-                                           .st_size = 0,
-                                           .st_blksize = 0,
-                                           .st_blocks = 1,
-                                           .st_atim = {},
-                                           .st_mtim = {},
-                                           .st_ctim = {}},
-                             (uint64_t)0);
+    struct fuse_entry_param e = {
+        .ino = ino,
+        .attr =
+            {
+                .st_dev = rdev,
+                .st_ino = ino,
+                .st_nlink = 1,
+                .st_mode = mode,
+                .st_uid = 0,
+                .st_gid = 0,
+                .st_rdev = 0,
+                .st_size = 0,
+                .st_blksize = 0,
+                .st_blocks = 1,
+                .st_atim = {},
+                .st_mtim = {},
+                .st_ctim = {},
+            },
+        .attr_timeout = context->get_timeout(),
+        .entry_timeout = context->get_timeout(),
+    };
+    clock_gettime(CLOCK_REALTIME, &(e.attr.st_atim));
+    e.attr.st_mtim = e.attr.st_atim;
+    e.attr.st_ctim = e.attr.st_atim;
+    new (ino_obj) tgfs_inode(e.attr, (uint64_t)0);
 
     if (context->upload(ino_obj) != 0) {
         // TODO : handle exception
@@ -93,13 +104,6 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         // TODO : handle exception
     }
 
-    struct fuse_entry_param e = {
-        .ino = ino_obj->get_attr().st_ino,
-        .attr_timeout = context->get_timeout(),
-        .entry_timeout = context->get_timeout(),
-    };
-
-    e.attr = ino_obj->get_attr();
     fuse_reply_entry(req, &e);
 }
 
@@ -109,7 +113,7 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
     if (context->is_debug()) {
         fuse_log(FUSE_LOG_DEBUG,
-                 "Func: readdir\n\tinode: %d\n\tsize: %d\n\toffset: %d\n", ino,
+                 "Func: readdir\n\tinode: %u\n\tsize: %u\n\toffset: %u\n", ino,
                  size, off);
     }
 
@@ -144,6 +148,7 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
     int fd = openat(context->get_root_fd(), std::to_string(ino).c_str(),
                     fi->flags & (~O_TRUNC));
     if (fd == -1) {
@@ -152,9 +157,16 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     }
     fi->fh = fd;
     fi->direct_io = 1;
+
+    struct stat attr = ino_obj->get_attr();
+
     if (fi->flags & O_TRUNC) {
         ftruncate(fd, sizeof(tgfs_inode));
+        attr.st_size = 0;
     }
+
+    ino_obj->set_attr(attr);
+
     fuse_reply_open(req, fi);
 }
 
@@ -189,8 +201,14 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
         fuse_buf_copy(&out_buf, in_buf, static_cast<fuse_buf_copy_flags>(0));
     if (res < 0)
         fuse_reply_err(req, errno);
-    else
+    else {
+        tgfs_inode *ino_obj = context->lookup_inode(ino);
+        struct stat attr = ino_obj->get_attr();
+        attr.st_size = std::max(attr.st_size, static_cast<off_t>(off + res));
+        clock_gettime(CLOCK_REALTIME, &(attr.st_mtim));
+        ino_obj->set_attr(attr);
         fuse_reply_write(req, (size_t)res);
+    }
 }
 
 void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -208,16 +226,126 @@ void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: getattr\n\tinode: %d\n", ino);
+        fuse_log(FUSE_LOG_DEBUG, "Func: getattr\n\tinode: %u\n", ino);
     }
 
     struct stat st = context->lookup_inode(ino)->get_attr();
     fuse_reply_attr(req, &st, context->get_timeout());
 }
 
+void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
+                  struct fuse_file_info *fi) {
+    tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "Func: setattr\n\tinode: %u\n\tto_set: %06o\n",
+                 ino, to_set);
+    }
+
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
+    struct stat new_attr = ino_obj->get_attr();
+    if (to_set & FUSE_SET_ATTR_MODE) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tmode: %07o\n", attr->st_mode);
+        }
+
+        new_attr.st_mode = attr->st_mode;
+    }
+    if (to_set & FUSE_SET_ATTR_UID) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tuid: %07o\n", attr->st_uid);
+        }
+
+        new_attr.st_uid = attr->st_uid;
+    }
+    if (to_set & FUSE_SET_ATTR_GID) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tgid: %07o\n", attr->st_gid);
+        }
+
+        new_attr.st_gid = attr->st_gid;
+    }
+    if (to_set & FUSE_SET_ATTR_SIZE) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tsize: %u\n", attr->st_size);
+        }
+
+        if (fi != NULL) {
+
+            if (context->is_debug()) {
+                fuse_log(FUSE_LOG_DEBUG, "\ttruncate fd: %u\n", fi->fh);
+            }
+
+            ftruncate(fi->fh, sizeof(tgfs_inode) + attr->st_size);
+        }
+        new_attr.st_size = attr->st_size;
+    }
+    if (to_set & FUSE_SET_ATTR_ATIME) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tatim\n");
+        }
+
+        new_attr.st_atim = attr->st_atim;
+    }
+    if (to_set & FUSE_SET_ATTR_MTIME) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tmtim\n");
+        }
+
+        new_attr.st_mtim = attr->st_mtim;
+    }
+    if (to_set & FUSE_SET_ATTR_ATIME_NOW) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_MTIME_NOW) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_FORCE) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_CTIME) {
+
+        if (context->is_debug()) {
+            fuse_log(FUSE_LOG_DEBUG, "\tctim\n");
+        }
+
+        new_attr.st_ctim = attr->st_ctim;
+    }
+    if (to_set & FUSE_SET_ATTR_KILL_SUID) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_KILL_SGID) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_FILE) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_KILL_PRIV) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_OPEN) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_TIMES_SET) {
+        // TODO
+    }
+    if (to_set & FUSE_SET_ATTR_TOUCH) {
+        // TODO
+    }
+    ino_obj->set_attr(new_attr);
+    fuse_reply_attr(req, &new_attr, context->get_timeout());
+}
+
 struct fuse_lowlevel_ops tgfs_opers = {
     .lookup = tgfs_lookup,
     .getattr = tgfs_getattr,
+    .setattr = tgfs_setattr,
     .mknod = tgfs_mknod,
     .open = tgfs_open,
     .read = tgfs_read,
