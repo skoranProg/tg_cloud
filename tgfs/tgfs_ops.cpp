@@ -148,6 +148,7 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
     int fd = openat(context->get_root_fd(), std::to_string(ino).c_str(),
                     fi->flags & (~O_TRUNC));
     if (fd == -1) {
@@ -156,9 +157,16 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     }
     fi->fh = fd;
     fi->direct_io = 1;
+
+    struct stat attr = ino_obj->get_attr();
+
     if (fi->flags & O_TRUNC) {
         ftruncate(fd, sizeof(tgfs_inode));
+        attr.st_size = 0;
     }
+
+    ino_obj->set_attr(attr);
+
     fuse_reply_open(req, fi);
 }
 
