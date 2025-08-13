@@ -2,6 +2,7 @@
 #define _TGFS_HELPERS_
 
 #include "tgfs_data.h"
+#include "unistd.h"
 
 fuse_ino_t get_new_ino(tgfs_data &context);
 

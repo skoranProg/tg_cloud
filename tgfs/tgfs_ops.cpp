@@ -6,6 +6,7 @@
 #include "sys/mman.h"
 #include "sys/stat.h"
 #include "sys/sysmacros.h"
+#include "time.h"
 #include "unistd.h"
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {

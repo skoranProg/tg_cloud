@@ -3,17 +3,17 @@
 
 #include "tgfs_fuse_dependencies.h"
 
-#include "../tdclient.h"
+#include "tgfs.h"
 #include "tgfs_dir.h"
 #include "tgfs_inode.h"
 
 class tgfs_data {
   private:
-    TdClass *tdclient;
-    double timeout;
-    const int root_fd;
-    const size_t max_filesize;
-    bool debug;
+    tgfs_net_api *api_;
+    double timeout_;
+    const int root_fd_;
+    const size_t max_filesize_;
+    bool debug_;
 
     // Only physically present(downloaded) files
     // May contain outdated information
@@ -30,7 +30,7 @@ class tgfs_data {
 
   public:
     tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
-              TdClass *tdclient);
+              tgfs_net_api *api);
 
     static tgfs_data *tgfs_ptr(fuse_req_t req);
 
