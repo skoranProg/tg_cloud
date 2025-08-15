@@ -3,51 +3,55 @@
 
 #include "tgfs_fuse_dependencies.h"
 
-#include "../tgcl/tdclient.h"
+#include "tgfs.h"
 #include "tgfs_dir.h"
+#include "tgfs_inode.h"
 
 class tgfs_data {
-private:
-  TdClass *tdclient;
-  double timeout;
-  const int root_fd;
-  const size_t max_filesize;
-  bool debug;
-  // Only physically present(downloaded) files
-  std::unordered_map<fuse_ino_t, uint64_t> last_version; // ino -> msg_id
-  // All files on server
-  std::unordered_map<fuse_ino_t, uint64_t> messages; // ino -> msg_id
-  // Physically present directories(their content might not be downloaded)
-  std::unordered_map<fuse_ino_t, tgfs_dir> directories; // ino -> ftable
+  private:
+    tgfs_net_api *api_;
+    double timeout_;
+    const int root_fd_;
+    const size_t max_filesize_;
+    bool debug_;
 
-  std::unordered_map<fuse_ino_t, uint64_t> &get_messages();
+    // Only physically present(downloaded) files
+    // May contain outdated information
+    std::unordered_map<fuse_ino_t, tgfs_inode *> inodes; // ino -> inode
 
-  std::unordered_map<fuse_ino_t, tgfs_dir> &get_directories();
+    // All files on server
+    // Must always be up-to-date(which means sync of whole table before each
+    // call)
+    std::unordered_map<fuse_ino_t, uint64_t> messages; // ino -> msg_id
 
-  int upload_table();
+    // Canonical way to address the table.
+    // Should syncs before return.
+    std::unordered_map<fuse_ino_t, uint64_t> &get_messages();
 
-  int update_table();
+  public:
+    tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
+              tgfs_net_api *api);
 
-public:
-  tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
-            TdClass *tdclient);
+    static tgfs_data *tgfs_ptr(fuse_req_t req);
 
-  static tgfs_data *tgfs_ptr(fuse_req_t req);
+    bool is_debug() const;
 
-  bool is_debug();
+    double get_timeout() const;
 
-  double get_timeout();
+    int get_root_fd() const;
 
-  int get_root_fd();
+    size_t get_max_filesize() const;
 
-  size_t get_max_filesize();
+    uint64_t lookup_msg(fuse_ino_t ino);
 
-  uint64_t lookup_msg(fuse_ino_t ino);
+    tgfs_inode *lookup_inode(fuse_ino_t ino);
 
-  tgfs_dir *lookup_dir(fuse_ino_t ino);
+    tgfs_dir *lookup_dir(fuse_ino_t ino);
 
-  int upload(fuse_ino_t ino);
-  int update(fuse_ino_t ino);
+    int upload(fuse_ino_t ino);
+    int upload(tgfs_inode *ino);
+
+    int update(fuse_ino_t ino);
 };
 
 #endif
