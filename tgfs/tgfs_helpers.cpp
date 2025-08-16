@@ -23,4 +23,3 @@ tgfs_inode *map_inode(const tgfs_data &context, fuse_ino_t ino) {
     close(fd);
     return res;
 }
-
