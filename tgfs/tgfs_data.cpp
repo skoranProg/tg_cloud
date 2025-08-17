@@ -1,16 +1,14 @@
 #include "tgfs_data.h"
-
-std::unordered_map<fuse_ino_t, uint64_t> &tgfs_data::get_messages() {
-    // TODO: Sync the table
-    return messages;
-}
+#include <string>
 
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
                      size_t max_filesize, tgfs_net_api *api)
     : api_{api}, timeout_{timeout}, root_fd_{root_fd},
-      max_filesize_{max_filesize}, debug_{debug}, inodes{}, messages{} {
+      max_filesize_{max_filesize}, debug_{debug}, inodes_{},
+      messages_{
+          ("/proc/self/fd/" + std::to_string(root_fd) + "/message_table").c_str()} {
     tgfs_dir *root = new tgfs_dir(FUSE_ROOT_ID, FUSE_ROOT_ID);
-    inodes.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
+    inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
 }
 
 tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
@@ -26,17 +24,17 @@ int tgfs_data::get_root_fd() const { return root_fd_; }
 size_t tgfs_data::get_max_filesize() const { return max_filesize_; }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
-    if (!get_messages().contains(ino)) {
+    if (!messages_.contains(ino)) {
         return 0;
     }
-    return get_messages().at(ino);
+    return messages_.at(ino);
 }
 
 tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
-    if (!inodes.contains(ino)) {
+    if (!inodes_.contains(ino)) {
         return nullptr;
     }
-    return inodes.at(ino);
+    return inodes_.at(ino);
 }
 
 tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
@@ -59,7 +57,7 @@ int tgfs_data::upload(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(tgfs_inode *ino) {
-    inodes[ino->get_attr().st_ino] = ino;
+    inodes_[ino->get_attr().st_ino] = ino;
     return upload(ino->get_attr().st_ino);
 }
 

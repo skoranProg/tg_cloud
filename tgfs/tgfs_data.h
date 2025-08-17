@@ -6,6 +6,7 @@
 #include "tgfs.h"
 #include "tgfs_dir.h"
 #include "tgfs_inode.h"
+#include "tgfs_table.h"
 
 class tgfs_data {
   private:
@@ -17,16 +18,12 @@ class tgfs_data {
 
     // Only physically present(downloaded) files
     // May contain outdated information
-    std::unordered_map<fuse_ino_t, tgfs_inode *> inodes; // ino -> inode
+    std::unordered_map<fuse_ino_t, tgfs_inode *> inodes_; // ino -> inode
 
     // All files on server
     // Must always be up-to-date(which means sync of whole table before each
     // call)
-    std::unordered_map<fuse_ino_t, uint64_t> messages; // ino -> msg_id
-
-    // Canonical way to address the table.
-    // Should syncs before return.
-    std::unordered_map<fuse_ino_t, uint64_t> &get_messages();
+    tgfs_table<fuse_ino_t, uint64_t> messages_; // ino -> msg_id
 
   public:
     tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
