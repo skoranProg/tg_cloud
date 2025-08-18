@@ -12,6 +12,19 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
 }
 
+int tgfs_data::update_table() {
+    std::destroy_at(&messages_);
+    int err = api_->download_table(table_path_);
+    if (err >= 3) {
+        return err;
+    }
+    std::construct_at(&messages_, table_path_);
+    if (err == 2) {
+        messages_.init();
+    }
+    return 0;
+}
+
 tgfs_data *tgfs_data::tgfs_ptr(fuse_req_t req) {
     return reinterpret_cast<tgfs_data *>(fuse_req_userdata(req));
 }

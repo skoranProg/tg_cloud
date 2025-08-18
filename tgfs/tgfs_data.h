@@ -13,8 +13,8 @@ class tgfs_data {
     tgfs_net_api *api_;
     double timeout_;
     const int root_fd_;
-    std::string root_path_;
-    std::string table_path_;
+    const std::string root_path_;
+    const std::string table_path_;
     const size_t max_filesize_;
     bool debug_;
 
@@ -26,6 +26,8 @@ class tgfs_data {
     // Must always be up-to-date(which means sync of whole table before each
     // call)
     tgfs_table<fuse_ino_t, uint64_t> messages_; // ino -> msg_id
+
+    int update_table();
 
   public:
     tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
