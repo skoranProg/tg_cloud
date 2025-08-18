@@ -1,4 +1,5 @@
 #include "tgfs_table.h"
+#include <format>
 #pragma mmap_size = 268435456;
 
 template <std::integral K, std::integral V> int tgfs_table<K, V>::update() {
@@ -24,23 +25,40 @@ template <std::integral K, std::integral V> tgfs_table<K, V>::~tgfs_table() {
 template <std::integral K, std::integral V> V tgfs_table<K, V>::at(K key) {
     update();
     V res;
+    char *err;
     sqlite3_exec(
         table_,
-        ("SELECT key, value FROM table WHERE key = " + std::to_string(key))
+        std::format("SELECT my_value FROM my_table WHERE my_key = {}", key)
             .c_str(),
         [](void *res, int n, const char *values[], const char *columns[]) {
-            *reinterpret_cast<V *>(res) = *reinterpret_cast<V *>(values[1]);
-            return 0;
+            *reinterpret_cast<V *>(res) = *reinterpret_cast<V *>(values[0]);
+            return 1;
         },
-        &res, nullptr);
+        &res, &err);
+    if (err) {
+        sqlite3_free(err);
+    }
     return res;
 }
 
 template <std::integral K, std::integral V>
 bool tgfs_table<K, V>::contains(K key) {
     update();
-    // TODO
-    return true;
+    bool res = false;
+    char *err;
+    sqlite3_exec(
+        table_,
+        std::format("SELECT my_key FROM my_table WHERE my_key = {}", key)
+            .c_str(),
+        [](void *res, int n, const char *values[], const char *columns[]) {
+            *reinterpret_cast<bool *>(res) = true;
+            return 1;
+        },
+        &res, &err);
+    if (err) {
+        sqlite3_free(err);
+    }
+    return res;
 }
 
 template <std::integral K, std::integral V>
@@ -48,6 +66,17 @@ int tgfs_table<K, V>::set(K key, V value) {
     if (update() != 1) {
         return 1;
     }
-    // TODO
+    char *err;
+    sqlite3_exec(
+        table_,
+        std::format(
+            "INSERT INTO my_table (my_key, my_value) VALUES ({}, {}) ON "
+            "CONFLICT(my_key) DO UPDATE SET my_value=excluded.my_value",
+            key, value)
+            .c_str(),
+        nullptr, nullptr, &err);
+    if (err) {
+        sqlite3_free(err);
+    }
     return 0;
 }
