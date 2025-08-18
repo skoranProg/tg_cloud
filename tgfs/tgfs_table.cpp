@@ -3,8 +3,18 @@
 #pragma mmap_size = 268435456;
 
 template <std::integral K, std::integral V> int tgfs_table<K, V>::init() {
-    // TODO
-    return 1;
+    char *err;
+    sqlite3_exec(table_,
+                 std::format("CREATE TABLE my_table ("
+                             "my_key INTEGER PRIMARY KEY"
+                             "my_value INTEGER"
+                             ");")
+                     .c_str(),
+                 nullptr, nullptr, &err);
+    if (err) {
+        sqlite3_free(err);
+    }
+    return 0;
 }
 
 template <std::integral K, std::integral V>
@@ -21,7 +31,7 @@ template <std::integral K, std::integral V> V tgfs_table<K, V>::at(K key) {
     char *err;
     sqlite3_exec(
         table_,
-        std::format("SELECT my_value FROM my_table WHERE my_key = {}", key)
+        std::format("SELECT my_value FROM my_table WHERE my_key = {};", key)
             .c_str(),
         [](void *res, int n, const char *values[], const char *columns[]) {
             *reinterpret_cast<V *>(res) = *reinterpret_cast<V *>(values[0]);
@@ -40,7 +50,7 @@ bool tgfs_table<K, V>::contains(K key) {
     char *err;
     sqlite3_exec(
         table_,
-        std::format("SELECT my_key FROM my_table WHERE my_key = {}", key)
+        std::format("SELECT my_key FROM my_table WHERE my_key = {};", key)
             .c_str(),
         [](void *res, int n, const char *values[], const char *columns[]) {
             *reinterpret_cast<bool *>(res) = true;
@@ -60,7 +70,7 @@ int tgfs_table<K, V>::set(K key, V value) {
         table_,
         std::format(
             "INSERT INTO my_table (my_key, my_value) VALUES ({}, {}) ON "
-            "CONFLICT(my_key) DO UPDATE SET my_value=excluded.my_value",
+            "CONFLICT(my_key) DO UPDATE SET my_value=excluded.my_value;",
             key, value)
             .c_str(),
         nullptr, nullptr, &err);
@@ -75,7 +85,7 @@ int tgfs_table<K, V>::remove(K key) {
     char *err;
     sqlite3_exec(
         table_,
-        std::format("DELETE FROM my_table WHERE my_key = {}", key).c_str(),
+        std::format("DELETE FROM my_table WHERE my_key = {};", key).c_str(),
         nullptr, nullptr, &err);
     if (err) {
         sqlite3_free(err);
