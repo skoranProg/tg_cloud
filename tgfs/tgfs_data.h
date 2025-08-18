@@ -13,6 +13,7 @@ class tgfs_data {
     tgfs_net_api *api_;
     double timeout_;
     const int root_fd_;
+    std::string root_path_;
     const size_t max_filesize_;
     bool debug_;
 

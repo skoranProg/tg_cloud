@@ -3,6 +3,7 @@
 
 #include "../SQLiteCpp/sqlite3/sqlite3.h"
 #include "stdint.h"
+#include <string>
 
 template <class K, class V> class tgfs_table {
   private:
@@ -13,7 +14,7 @@ template <class K, class V> class tgfs_table {
     int upload();
 
   public:
-    explicit tgfs_table(const char *path);
+    explicit tgfs_table(std::string path);
     V at(K key);
     bool contains(K key);
     int set(K key, V value);

@@ -4,9 +4,9 @@
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
                      size_t max_filesize, tgfs_net_api *api)
     : api_{api}, timeout_{timeout}, root_fd_{root_fd},
+      root_path_{"/proc/self/fd/" + std::to_string(root_fd) + "/"},
       max_filesize_{max_filesize}, debug_{debug}, inodes_{},
-      messages_{
-          ("/proc/self/fd/" + std::to_string(root_fd) + "/message_table").c_str()} {
+      messages_{(root_path_ + "message_table").c_str()} {
     tgfs_dir *root = new tgfs_dir(FUSE_ROOT_ID, FUSE_ROOT_ID);
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
 }
