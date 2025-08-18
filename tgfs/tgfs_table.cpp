@@ -72,6 +72,13 @@ int tgfs_table<K, V>::set(K key, V value) {
 
 template <std::integral K, std::integral V>
 int tgfs_table<K, V>::remove(K key) {
-    // TODO
+    char *err;
+    sqlite3_exec(
+        table_,
+        std::format("DELETE FROM my_table WHERE my_key = {}", key).c_str(),
+        nullptr, nullptr, &err);
+    if (err) {
+        sqlite3_free(err);
+    }
     return 0;
 }
