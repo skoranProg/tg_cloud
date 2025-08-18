@@ -3,18 +3,20 @@
 
 #include "../SQLiteCpp/sqlite3/sqlite3.h"
 #include "stdint.h"
+#include <concepts>
 #include <string>
 
-template <class K, class V> class tgfs_table {
+template <std::integral K, std::integral V> class tgfs_table {
   private:
     sqlite3 *table_;
-    uint64_t version;
+    uint64_t version_;
 
     int update();
     int upload();
 
   public:
     explicit tgfs_table(std::string path);
+    ~tgfs_table();
     V at(K key);
     bool contains(K key);
     int set(K key, V value);
