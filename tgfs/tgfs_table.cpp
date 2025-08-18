@@ -2,20 +2,14 @@
 #include <format>
 #pragma mmap_size = 268435456;
 
-template <std::integral K, std::integral V> int tgfs_table<K, V>::update() {
+template <std::integral K, std::integral V> int tgfs_table<K, V>::init() {
     // TODO
     return 1;
 }
 
-template <std::integral K, std::integral V> int tgfs_table<K, V>::upload() {
-    // TODO
-    return 0;
-}
-
 template <std::integral K, std::integral V>
-tgfs_table<K, V>::tgfs_table(std::string path) : version_{0} {
+tgfs_table<K, V>::tgfs_table(const std::string &path) {
     sqlite3_open(path.c_str(), &table_);
-    update();
 }
 
 template <std::integral K, std::integral V> tgfs_table<K, V>::~tgfs_table() {
@@ -23,7 +17,6 @@ template <std::integral K, std::integral V> tgfs_table<K, V>::~tgfs_table() {
 }
 
 template <std::integral K, std::integral V> V tgfs_table<K, V>::at(K key) {
-    update();
     V res;
     char *err;
     sqlite3_exec(
@@ -43,7 +36,6 @@ template <std::integral K, std::integral V> V tgfs_table<K, V>::at(K key) {
 
 template <std::integral K, std::integral V>
 bool tgfs_table<K, V>::contains(K key) {
-    update();
     bool res = false;
     char *err;
     sqlite3_exec(
@@ -63,9 +55,6 @@ bool tgfs_table<K, V>::contains(K key) {
 
 template <std::integral K, std::integral V>
 int tgfs_table<K, V>::set(K key, V value) {
-    if (update() != 1) {
-        return 1;
-    }
     char *err;
     sqlite3_exec(
         table_,
@@ -78,5 +67,11 @@ int tgfs_table<K, V>::set(K key, V value) {
     if (err) {
         sqlite3_free(err);
     }
+    return 0;
+}
+
+template <std::integral K, std::integral V>
+int tgfs_table<K, V>::remove(K key) {
+    // TODO
     return 0;
 }

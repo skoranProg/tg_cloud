@@ -9,17 +9,17 @@
 template <std::integral K, std::integral V> class tgfs_table {
   private:
     sqlite3 *table_;
-    uint64_t version_;
-
-    int update();
-    int upload();
 
   public:
-    explicit tgfs_table(std::string path);
+    explicit tgfs_table(const std::string &path);
     ~tgfs_table();
+
+    int init();
+
     V at(K key);
     bool contains(K key);
     int set(K key, V value);
+    int remove(K key);
 };
 
 #endif

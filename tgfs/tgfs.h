@@ -6,10 +6,11 @@
 
 class tgfs_net_api {
   public:
-    virtual uint64_t upload(std::string path);
-    virtual int download(uint64_t msg, std::string path);
+    virtual uint64_t upload(const std::string &path);
+    virtual int download(uint64_t msg, const std::string &path);
     virtual int remove(uint64_t msg);
-    virtual uint64_t get_last_message();
+    virtual int download_table(const std::string &path);
+    virtual int upload_table(const std::string &path);
 };
 
 int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api);
