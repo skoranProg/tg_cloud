@@ -14,6 +14,7 @@ class tgfs_data {
     double timeout_;
     const int root_fd_;
     std::string root_path_;
+    std::string table_path_;
     const size_t max_filesize_;
     bool debug_;
 
