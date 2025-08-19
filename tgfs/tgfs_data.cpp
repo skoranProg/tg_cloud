@@ -1,5 +1,7 @@
 #include "tgfs_data.h"
+#include "tgfs_helpers.h"
 #include <format>
+#include <sys/mman.h>
 
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
                      size_t max_filesize, tgfs_net_api *api)
@@ -46,7 +48,9 @@ uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
 
 tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
     if (!inodes_.contains(ino)) {
-        return nullptr;
+        if (update(ino)) {
+            return nullptr;
+        }
     }
     return inodes_.at(ino);
 }
@@ -66,7 +70,15 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(fuse_ino_t ino) {
-    // TODO
+    update_table();
+    uint64_t msg = messages_.at(ino);
+    if (msg == 0) {
+        return 1;
+    }
+    uint64_t new_msg = api_->upload(msg, std::format("{}{}", root_path_, ino));
+    api_->remove(msg);
+    messages_.set(ino, msg);
+    api_->upload_table(table_path_);
     return 0;
 }
 
@@ -76,6 +88,16 @@ int tgfs_data::upload(tgfs_inode *ino) {
 }
 
 int tgfs_data::update(fuse_ino_t ino) {
-    // TODO
+    update_table();
+    uint64_t msg = messages_.at(ino);
+    if (msg == 0) {
+        return 1;
+    }
+    if (inodes_.contains(ino)) {
+        munmap(inodes_[ino], sizeof(tgfs_inode));
+        inodes_.erase(ino);
+    }
+    api_->download(msg, std::format("{}{}", root_path_, ino));
+    inodes_[ino] = map_inode(*this, ino);
     return 0;
 }

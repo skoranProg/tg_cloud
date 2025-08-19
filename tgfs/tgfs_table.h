@@ -2,8 +2,8 @@
 #define _TGFS_TABLE_H_
 
 #include "../SQLiteCpp/sqlite3/sqlite3.h"
-#include "stdint.h"
 #include <concepts>
+#include <stdint.h>
 #include <string>
 
 template <std::integral K, std::integral V> class tgfs_table {

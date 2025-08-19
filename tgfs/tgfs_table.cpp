@@ -1,5 +1,6 @@
 #include "tgfs_table.h"
 #include <format>
+
 #pragma mmap_size = 268435456;
 
 template <std::integral K, std::integral V> int tgfs_table<K, V>::init() {
@@ -27,7 +28,7 @@ template <std::integral K, std::integral V> tgfs_table<K, V>::~tgfs_table() {
 }
 
 template <std::integral K, std::integral V> V tgfs_table<K, V>::at(K key) {
-    V res;
+    V res = 0;
     char *err;
     sqlite3_exec(
         table_,

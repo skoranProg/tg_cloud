@@ -1,7 +1,7 @@
 #ifndef _TGFS_H_
 #define _TGFS_H_
 
-#include "stdint.h"
+#include <stdint.h>
 #include <string>
 
 class tgfs_net_api {

@@ -1,13 +1,12 @@
 #include "tgfs_data.h"
 #include "tgfs_helpers.h"
-
-#include "errno.h"
-#include "fcntl.h"
-#include "sys/mman.h"
-#include "sys/stat.h"
-#include "sys/sysmacros.h"
-#include "time.h"
-#include "unistd.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
+#include <time.h>
+#include <unistd.h>
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
