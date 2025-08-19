@@ -16,7 +16,7 @@ template <std::integral K, std::integral V> class tgfs_table {
 
     int init();
 
-    static const V zero;
+    static const V VZERO;
 
     V at(K key);
     bool contains(K key);
@@ -24,6 +24,6 @@ template <std::integral K, std::integral V> class tgfs_table {
     int remove(K key);
 };
 
-template <std::integral K, std::integral V> const V tgfs_table<K, V>::zero = 0;
+template <std::integral K, std::integral V> const V tgfs_table<K, V>::VZERO = 0;
 
 #endif

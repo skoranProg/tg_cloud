@@ -28,7 +28,7 @@ template <std::integral K, std::integral V> tgfs_table<K, V>::~tgfs_table() {
 }
 
 template <std::integral K, std::integral V> V tgfs_table<K, V>::at(K key) {
-    V res = zero;
+    V res = VZERO;
     char *err;
     sqlite3_exec(
         table_,

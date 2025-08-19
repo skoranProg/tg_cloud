@@ -44,9 +44,6 @@ size_t tgfs_data::get_max_filesize() const { return max_filesize_; }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
     update_table();
-    if (!messages_.contains(ino)) {
-        return 0;
-    }
     return messages_.at(ino);
 }
 
@@ -74,9 +71,8 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(fuse_ino_t ino) {
-    update_table();
-    uint64_t msg = messages_.at(ino);
-    if (msg == messages_.zero) {
+    uint64_t msg = lookup_msg(ino);
+    if (msg == messages_.VZERO) {
         return 1;
     }
     uint64_t new_msg = api_->upload(msg, std::format("{}{}", root_path_, ino));
@@ -92,9 +88,8 @@ int tgfs_data::upload(tgfs_inode *ino) {
 }
 
 int tgfs_data::update(fuse_ino_t ino) {
-    update_table();
-    uint64_t msg = messages_.at(ino);
-    if (msg == messages_.zero) {
+    uint64_t msg = lookup_msg(ino);
+    if (msg == messages_.VZERO) {
         return 1;
     }
     if (inodes_.contains(ino)) {
