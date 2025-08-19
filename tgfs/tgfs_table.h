@@ -16,10 +16,14 @@ template <std::integral K, std::integral V> class tgfs_table {
 
     int init();
 
+    static const V zero;
+
     V at(K key);
     bool contains(K key);
     int set(K key, V value);
     int remove(K key);
 };
+
+template <std::integral K, std::integral V> const V tgfs_table<K, V>::zero = 0;
 
 #endif
