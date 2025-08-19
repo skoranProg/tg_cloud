@@ -40,6 +40,7 @@ int tgfs_data::get_root_fd() const { return root_fd_; }
 size_t tgfs_data::get_max_filesize() const { return max_filesize_; }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
+    update_table();
     if (!messages_.contains(ino)) {
         return 0;
     }
