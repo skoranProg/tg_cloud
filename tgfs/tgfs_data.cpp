@@ -15,11 +15,14 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
 }
 
 int tgfs_data::update_table() {
-    std::destroy_at(&messages_);
-    int err = api_->download_table(table_path_);
-    if (err >= 3) {
-        return err;
+    if (api_->is_up_to_date_table()) {
+        return 0;
     }
+    std::destroy_at(&messages_);
+    int err = 0;
+    do {
+        err = api_->download_table(table_path_);
+    } while (err != 0 && err != 2);
     std::construct_at(&messages_, table_path_);
     if (err == 2) {
         messages_.init();

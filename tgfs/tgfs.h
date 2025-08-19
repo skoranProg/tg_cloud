@@ -10,6 +10,7 @@ class tgfs_net_api {
     virtual int download(uint64_t msg, const std::string &path);
     virtual int remove(uint64_t msg);
 
+    virtual bool is_up_to_date_table();
     // Should return:
     // 0 - on successful download
     // 1 - if table already was up-to-date
