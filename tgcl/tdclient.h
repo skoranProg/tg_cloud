@@ -68,6 +68,14 @@ public:
 
     td::tl_object_ptr<td_api::message> GetLastPinnedMessage(td_api::int53 chat_id);
 
+    /* Method to delete message */
+
+    void DeleteMessage(td_api::int53 chat_id, td_api::int53 message_id);
+
+    /* DownloadFile, knowing message ID */
+
+    td::tl_object_ptr<td_api::file> DownloadFileFromMes(td::tl_object_ptr<td_api::message> mes);
+
 private:
     using Object = td_api::object_ptr<td_api::Object>;
     std::unique_ptr<td::ClientManager> client_manager_;
@@ -86,6 +94,7 @@ private:
     std::unordered_map<std::uint64_t, std::function<void(Object)>> handlers_;
     std::unordered_map<std::int64_t, int> completed_uploads_;
     std::unordered_map<std::int64_t, int> completed_downloads_;
+    std::unordered_map<std::int64_t, int> sent_message_;
 
 
     void Restart();

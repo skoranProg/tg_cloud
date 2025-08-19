@@ -141,6 +141,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 c
     auto history = td_api::make_object<td_api::getChatHistory>();
     history->chat_id_ = chat_id;
     history->limit_ = 1;
+    history->offset_ = 0;
     history->only_local_ = false;
     history->from_message_id_ = 0;
     td::tl_object_ptr<td_api::message> last_message = nullptr;
@@ -165,6 +166,11 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 c
     return last_message;
 }
 
+td::tl_object_ptr<td_api::file> TdClass::DownloadFileFromMes(td::tl_object_ptr<td_api::message> mes) {
+    auto fl = td::move_tl_object_as<td_api::messageDocument>(mes->content_);
+    return DownloadFile(fl->document_->document_->id_);
+}
+
 td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) {
     auto send_message = td_api::make_object<td_api::sendMessage>();
     send_message->chat_id_ = chat_id;
@@ -182,7 +188,6 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
             std::cerr << "Problem while sending file\n";
             return;
         }
-        //std::cout << to_string(object) << '\n';
         auto mes = td::move_tl_object_as<td_api::message>(object);
         result_mes_id = mes->id_;
         auto fl = td::move_tl_object_as<td_api::messageDocument>(mes->content_);
@@ -194,6 +199,10 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
         ProcessResponse(client_manager_->receive(0));;
     }
     while (!completed_uploads_[file_id]) {
+
+        ProcessResponse(client_manager_->receive(0));;
+    }
+    while (!sent_message_[result_mes_id]) {
         ProcessResponse(client_manager_->receive(0));;
     }
     return result_mes_id;
@@ -218,6 +227,25 @@ td_api::int53 TdClass::GetChatId(const std::string& username) {
     }
     return id;
 }
+
+void TdClass::DeleteMessage(td_api::int53 chat_id, td_api::int53 message_id) {
+    auto del_mes = td_api::make_object<td_api::deleteMessages>();
+    del_mes->chat_id_ = chat_id;
+    del_mes->message_ids_ = std::vector<td_api::int53>{message_id};
+    bool wait = true;
+    SendQuery(std::move(del_mes), [this, &wait](Object object) {
+        if (object->get_id() == td_api::error::ID) {
+            std::cerr << to_string(object);
+            wait = false;
+            return;
+        }
+        wait = false;
+    });
+    while (wait) {
+        ProcessResponse(client_manager_->receive(0));
+    };
+}
+
 
 void TdClass::SetMainChatId(const std::string &username) {
     main_chat_id_ = GetChatId(username);
@@ -262,12 +290,16 @@ void TdClass::ProcessUpdate(td_api::object_ptr<td_api::Object> update) {
                             OnAuthorizationStateUpdate();
                         },
                         [this](td_api::updateFile &update_file) {
-                            //std::cout << to_string(update_file) << std::endl;
                             completed_downloads_[update_file.file_->id_] = update_file.file_->local_->is_downloading_completed_;
                             completed_uploads_[update_file.file_->id_] = update_file.file_->remote_->is_uploading_completed_;
 
                         },
-                        [](auto &update) {}));
+                        [this](td_api::updateMessageSendSucceeded &update_message_state) {
+                            sent_message_[update_message_state.old_message_id_] = 1;
+                            sent_message_[update_message_state.message_->id_] = 1;
+                        },
+                        [](auto &update) {
+                        }));
 }
 
 auto TdClass::CreateAuthenticationQueryHandler() {
