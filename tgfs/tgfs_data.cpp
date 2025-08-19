@@ -98,6 +98,9 @@ int tgfs_data::update(fuse_ino_t ino) {
         return 1;
     }
     if (inodes_.contains(ino)) {
+        if (msg == inodes_[ino]->get_version()) {
+            return 0;
+        }
         munmap(inodes_[ino], sizeof(tgfs_inode));
         inodes_.erase(ino);
     }
