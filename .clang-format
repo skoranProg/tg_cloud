@@ -1,2 +1,9 @@
-BasedOnStyle: LLVM
+---
+BasedOnStyle: Google
+AccessModifierOffset: -3
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
 IndentWidth: 4
+InsertBraces: true
+InsertNewlineAtEOF: true
+Language: Cpp
