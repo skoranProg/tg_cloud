@@ -75,9 +75,9 @@ int tgfs_data::upload(fuse_ino_t ino) {
     if (msg == 0) {
         return 1;
     }
-    uint64_t new_msg = api_->upload(msg, std::format("{}{}", root_path_, ino));
+    uint64_t new_msg = api_->upload(std::format("{}{}", root_path_, ino));
     api_->remove(msg);
-    messages_.set(ino, msg);
+    messages_.set(ino, new_msg);
     api_->upload_table(table_path_);
     return 0;
 }
