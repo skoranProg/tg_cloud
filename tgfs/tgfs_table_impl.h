@@ -18,7 +18,8 @@ template <> struct formatter<tgfs_sql_key<string>, char> {
     }
 
     template <class FmtContext>
-    FmtContext::iterator format(tgfs_sql_key<string> val, FmtContext &ctx) {
+    FmtContext::iterator format(tgfs_sql_key<string> val,
+                                FmtContext &ctx) const {
         return format_to(ctx.out(), "\'{}\'", val.key);
     }
 };
@@ -27,20 +28,14 @@ template <integral T>
 struct formatter<tgfs_sql_key<T>, char> : formatter<T, char> {
 
     template <class FmtContext>
-    FmtContext::iterator format(tgfs_sql_key<T> val, FmtContext &ctx) {
-        return format(val.key, ctx);
+    FmtContext::iterator format(tgfs_sql_key<T> val, FmtContext &ctx) const {
+        return formatter<T, char>::format(val.key, ctx);
     }
 };
 
 } // namespace std
 
 #pragma mmap_size = 268435456;
-
-tgfs_db::tgfs_db(const std::string &path) {
-    sqlite3_open(path.c_str(), &table_);
-}
-
-tgfs_db::~tgfs_db() { sqlite3_close(table_); }
 
 template <IntOrStr K, std::integral V> int tgfs_table<K, V>::init() {
     char *err;
