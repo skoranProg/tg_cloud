@@ -72,7 +72,7 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 
 int tgfs_data::upload(fuse_ino_t ino) {
     uint64_t msg = lookup_msg(ino);
-    if (msg == messages_.VZERO) {
+    if (msg == 0) {
         return 1;
     }
     uint64_t new_msg = api_->upload(msg, std::format("{}{}", root_path_, ino));
@@ -89,7 +89,7 @@ int tgfs_data::upload(tgfs_inode *ino) {
 
 int tgfs_data::update(fuse_ino_t ino) {
     uint64_t msg = lookup_msg(ino);
-    if (msg == messages_.VZERO) {
+    if (msg == 0) {
         return 1;
     }
     if (inodes_.contains(ino)) {
