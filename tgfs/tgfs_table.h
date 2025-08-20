@@ -6,17 +6,23 @@
 #include <stdint.h>
 #include <string>
 
-template <std::integral K, std::integral V> class tgfs_table {
-  private:
+class tgfs_db {
+  public:
     sqlite3 *table_;
 
+    explicit tgfs_db(const std::string &path);
+    ~tgfs_db();
+};
+
+template <class K, class V> class tgfs_table;
+
+template <std::integral K, std::integral V>
+class tgfs_table<K, V> : public tgfs_db {
+
   public:
-    explicit tgfs_table(const std::string &path);
-    ~tgfs_table();
+    explicit tgfs_table(const std::string &path) : tgfs_db{path} {}
 
     int init();
-
-    static const V VZERO;
 
     V at(K key);
     bool contains(K key);
@@ -24,6 +30,17 @@ template <std::integral K, std::integral V> class tgfs_table {
     int remove(K key);
 };
 
-template <std::integral K, std::integral V> const V tgfs_table<K, V>::VZERO = 0;
+template <std::integral V> class tgfs_table<std::string, V> : public tgfs_db {
+
+  public:
+    explicit tgfs_table(const std::string &path) : tgfs_db{path} {}
+
+    int init();
+
+    V at(std::string key);
+    bool contains(std::string key);
+    int set(std::string key, V value);
+    int remove(std::string key);
+};
 
 #endif
