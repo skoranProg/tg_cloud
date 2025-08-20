@@ -7,8 +7,6 @@
 #include <stdint.h>
 #include <string>
 
-#pragma mmap_size = 268435456;
-
 class tgfs_db {
   public:
     sqlite3 *table_;
