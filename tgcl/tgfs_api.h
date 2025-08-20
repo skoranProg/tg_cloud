@@ -23,5 +23,6 @@ public:
 private:
     TdClass* client_;
 
+    uint64_t current_table_id_;
 };
 

@@ -16,13 +16,17 @@ uint64_t td_client_api::upload(const std::string &path)  {
 }
 
 int td_client_api::download_table(const std::string &path) {
+    current_table_id_ = client_->GetLastPinnedMessage(client_->GetMainChatId())->id_;
+    download(current_table_id_, path);
     return 0;
 };
 
 int td_client_api::upload_table(const std::string &path) {
+    uint64_t id_ = upload(path);
+    client_->PinMessage(client_->GetMainChatId(), id_);
     return 0;
 }
 
 bool td_client_api::is_up_to_date_table() {
-    return false;
+    return client_->GetLastPinnedMessage(client_->GetMainChatId())->id_ == current_table_id_;
 }
