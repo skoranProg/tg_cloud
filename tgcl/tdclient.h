@@ -94,7 +94,7 @@ private:
     std::unordered_map<std::uint64_t, std::function<void(Object)>> handlers_;
     std::unordered_map<std::int64_t, int> completed_uploads_;
     std::unordered_map<std::int64_t, int> completed_downloads_;
-    std::unordered_map<std::int64_t, int> sent_message_;
+    std::unordered_map<std::int64_t, td_api::int53> sent_message_;
 
 
     void Restart();

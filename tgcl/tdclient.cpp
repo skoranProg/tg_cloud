@@ -205,7 +205,7 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
     while (!sent_message_[result_mes_id]) {
         ProcessResponse(client_manager_->receive(0));;
     }
-    return result_mes_id;
+    return sent_message_[result_mes_id];
 }
 
 td_api::int53 TdClass::GetChatId(const std::string& username) {
@@ -295,8 +295,8 @@ void TdClass::ProcessUpdate(td_api::object_ptr<td_api::Object> update) {
 
                         },
                         [this](td_api::updateMessageSendSucceeded &update_message_state) {
-                            sent_message_[update_message_state.old_message_id_] = 1;
-                            sent_message_[update_message_state.message_->id_] = 1;
+                            sent_message_[update_message_state.old_message_id_] = update_message_state.message_->id_;
+                            sent_message_[update_message_state.message_->id_] = update_message_state.message_->id_;
                         },
                         [](auto &update) {
                         }));

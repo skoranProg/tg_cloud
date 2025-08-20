@@ -8,6 +8,7 @@ add_executable(tg_cloud
         tgcl/tdclient.cpp
         tgcl/td_helpers.cpp
         tgcl/test.cpp
+        tgcl/tgfs_api.cpp
 
         tgfs/tgfs_main.cpp
         tgfs/tgfs_ops.cpp
