@@ -26,9 +26,8 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api) {
     struct fuse_loop_config config;
 
     if (fuse_parse_cmdline(&args, &opts) != 0)
-        return 1;
+        return 42;
     if (opts.show_help) {
-        printf("usage: %s [options] <mountpoint>\n\n", argv[0]);
         fuse_cmdline_help();
         fuse_lowlevel_help();
         tgfs_help();
@@ -44,11 +43,10 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api) {
     }
 
     if (opts.mountpoint == NULL) {
-        printf("usage: %s [options] <mountpoint>\n", argv[0]);
         printf("       %s --help\n", argv[0]);
         free(opts.mountpoint);
         fuse_opt_free_args(&args);
-        return 1;
+        return 42;
     }
 
     struct tgfs_opts custom_opts = {
@@ -59,28 +57,28 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api) {
     if (fuse_opt_parse(&args, &custom_opts, tgfs_args, NULL) == -1) {
         free(opts.mountpoint);
         fuse_opt_free_args(&args);
-        return 1;
+        return 42;
     }
 
     if (custom_opts.max_filesize > (1ll << 31)) {
         printf("Files can't be larger than 2 Gb.");
         free(opts.mountpoint);
         fuse_opt_free_args(&args);
-        return 1;
+        return 42;
     }
 
     if (custom_opts.timeout < 0) {
         printf("Timeout can't be negative");
         free(opts.mountpoint);
         fuse_opt_free_args(&args);
-        return 1;
+        return 42;
     }
 
     int root_fd = open(opts.mountpoint, O_PATH);
     if (root_fd == -1) {
         free(opts.mountpoint);
         fuse_opt_free_args(&args);
-        return 1;
+        return 33;
     }
 
     tgfs_data *context = new tgfs_data(opts.debug, custom_opts.timeout, root_fd,
