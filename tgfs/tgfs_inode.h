@@ -1,13 +1,12 @@
 #ifndef _TGFS_INODE_H_
 #define _TGFS_INODE_H_
 
-#include "sys/stat.h"
+#include "tgfs_fuse_dependencies.h"
 #include <cstdint>
 #include <map>
 #include <set>
 #include <string>
-
-#include "tgfs_fuse_dependencies.h"
+#include <sys/stat.h>
 
 class tgfs_inode {
   public:

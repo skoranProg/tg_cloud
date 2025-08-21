@@ -8,6 +8,7 @@ add_executable(tg_cloud
         tgcl/tdclient.cpp
         tgcl/td_helpers.cpp
         tgcl/test.cpp
+        tgcl/tgfs_api.cpp
 
         tgfs/tgfs_main.cpp
         tgfs/tgfs_ops.cpp
@@ -15,6 +16,7 @@ add_executable(tg_cloud
         tgfs/tgfs_dir.cpp
         tgfs/tgfs_helpers.cpp
         tgfs/tgfs_inode.cpp
+        tgfs/tgfs_table.cpp
 )
 
 set_target_properties(tg_cloud
