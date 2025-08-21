@@ -17,6 +17,7 @@ add_executable(tg_cloud
         tgfs/tgfs_helpers.cpp
         tgfs/tgfs_inode.cpp
         tgfs/tgfs_table.cpp
+        parser/parser.cpp
 )
 
 set_target_properties(tg_cloud
