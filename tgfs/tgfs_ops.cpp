@@ -278,7 +278,7 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
                 fuse_log(FUSE_LOG_DEBUG, "\ttruncate fd: %u\n", fi->fh);
             }
 
-            ftruncate(fi->fh, sizeof(tgfs_inode) + attr->st_size);
+            ftruncate(fi->fh, attr->st_size);
         }
         new_attr.st_size = attr->st_size;
     }
