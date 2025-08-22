@@ -179,7 +179,7 @@ void tgfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     buf.buf[0].flags =
         static_cast<fuse_buf_flags>(FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK);
     buf.buf[0].fd = fi->fh;
-    buf.buf[0].pos = sizeof(tgfs_inode);
+    buf.buf[0].pos = 0;
     buf.off = off;
 
     fuse_reply_data(req, &buf, FUSE_BUF_SPLICE_MOVE);
@@ -189,7 +189,7 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
                     off_t off, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
     size_t bufsize = fuse_buf_size(in_buf);
-    if (sizeof(tgfs_inode) + off + bufsize > context->get_max_filesize()) {
+    if (off + bufsize > context->get_max_filesize()) {
         fuse_reply_err(req, EFBIG);
         return;
     }
@@ -197,7 +197,7 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
     out_buf.buf[0].flags =
         static_cast<fuse_buf_flags>(FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK);
     out_buf.buf[0].fd = fi->fh;
-    out_buf.buf[0].pos = sizeof(tgfs_inode);
+    out_buf.buf[0].pos = 0;
     out_buf.off = off;
 
     ssize_t res =
