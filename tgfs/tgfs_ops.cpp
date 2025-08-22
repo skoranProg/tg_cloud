@@ -1,5 +1,3 @@
-#include "tgfs_data.h"
-#include "tgfs_helpers.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -7,6 +5,9 @@
 #include <sys/sysmacros.h>
 #include <time.h>
 #include <unistd.h>
+
+#include "tgfs_data.h"
+#include "tgfs_helpers.h"
 
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
@@ -55,20 +56,22 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     fuse_ino_t ino = get_new_ino(*context);
 
     std::string local_fname = std::to_string(ino);
-    if (mknodat(context->get_root_fd(), local_fname.c_str(), mode | 0777,
-                rdev) == -1) {
+    if (mkdirat(context->get_root_fd(), local_fname.c_str(), S_IFDIR | 0777) ==
+        -1) {
         fuse_reply_err(req, errno);
         return;
     }
 
-    int fd = openat(context->get_root_fd(), local_fname.c_str(), O_RDWR);
-    {
-        char buf[sizeof(tgfs_inode)];
-        write(fd, buf, sizeof(tgfs_inode));
-    }
+    int fd =
+        openat(context->get_root_fd(),
+               std::format("{}/inode", local_fname).c_str(), O_CREAT | O_RDWR);
+    ftruncate(fd, sizeof(tgfs_inode));
     tgfs_inode *ino_obj = reinterpret_cast<tgfs_inode *>(mmap(
         NULL, sizeof(tgfs_inode), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
     close(fd);
+
+    mknodat(context->get_root_fd(), std::format("{}/0", local_fname).c_str(),
+            S_IFREG | O_RDWR, 0);
 
     struct fuse_entry_param e = {
         .ino = ino,
@@ -199,9 +202,9 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
 
     ssize_t res =
         fuse_buf_copy(&out_buf, in_buf, static_cast<fuse_buf_copy_flags>(0));
-    if (res < 0)
+    if (res < 0) {
         fuse_reply_err(req, errno);
-    else {
+    } else {
         tgfs_inode *ino_obj = context->lookup_inode(ino);
         struct stat attr = ino_obj->get_attr();
         attr.st_size = std::max(attr.st_size, static_cast<off_t>(off + res));
@@ -245,7 +248,6 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     struct stat new_attr = ino_obj->get_attr();
     if (to_set & FUSE_SET_ATTR_MODE) {
-
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tmode: %07o\n", attr->st_mode);
         }
@@ -253,7 +255,6 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
         new_attr.st_mode = attr->st_mode;
     }
     if (to_set & FUSE_SET_ATTR_UID) {
-
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tuid: %07o\n", attr->st_uid);
         }
@@ -261,7 +262,6 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
         new_attr.st_uid = attr->st_uid;
     }
     if (to_set & FUSE_SET_ATTR_GID) {
-
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tgid: %07o\n", attr->st_gid);
         }
@@ -269,13 +269,11 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
         new_attr.st_gid = attr->st_gid;
     }
     if (to_set & FUSE_SET_ATTR_SIZE) {
-
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tsize: %u\n", attr->st_size);
         }
 
         if (fi != NULL) {
-
             if (context->is_debug()) {
                 fuse_log(FUSE_LOG_DEBUG, "\ttruncate fd: %u\n", fi->fh);
             }
@@ -285,7 +283,6 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
         new_attr.st_size = attr->st_size;
     }
     if (to_set & FUSE_SET_ATTR_ATIME) {
-
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tatim\n");
         }
@@ -293,7 +290,6 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
         new_attr.st_atim = attr->st_atim;
     }
     if (to_set & FUSE_SET_ATTR_MTIME) {
-
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tmtim\n");
         }
@@ -310,7 +306,6 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
         // TODO
     }
     if (to_set & FUSE_SET_ATTR_CTIME) {
-
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tctim\n");
         }
