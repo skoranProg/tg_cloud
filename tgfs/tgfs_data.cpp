@@ -61,7 +61,7 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
     if (dir == nullptr) {
         return nullptr;
     }
-    if (!S_ISDIR(dir->get_attr().st_mode)) {
+    if (!S_ISDIR(dir->attr.st_mode)) {
         // TODO: Send error info
         //       Exception perhaps ?
         //       Or just set errno ?
@@ -83,8 +83,8 @@ int tgfs_data::upload(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(tgfs_inode *ino) {
-    inodes_[ino->get_attr().st_ino] = ino;
-    return upload(ino->get_attr().st_ino);
+    inodes_[ino->attr.st_ino] = ino;
+    return upload(ino->attr.st_ino);
 }
 
 int tgfs_data::update(fuse_ino_t ino) {
@@ -93,7 +93,7 @@ int tgfs_data::update(fuse_ino_t ino) {
         return 1;
     }
     if (inodes_.contains(ino)) {
-        if (msg == inodes_[ino]->get_version()) {
+        if (msg == inodes_[ino]->version) {
             return 0;
         }
         munmap(inodes_[ino], sizeof(tgfs_inode));
