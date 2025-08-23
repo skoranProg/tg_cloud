@@ -1,12 +1,30 @@
 #include "tgfs_inode.h"
 
+#include <format>
+
 tgfs_inode::tgfs_inode(struct stat attr, uint64_t version)
-    : attr_{attr}, version_{version} {}
+    : attr{attr}, version{version}, data_msg_{0}, data_version_{0} {}
 
-struct stat tgfs_inode::get_attr() { return attr_; }
+int tgfs_inode::update_data(tgfs_net_api *api, int n,
+                            const std::string &root_path) {
+    if (n != 0) {
+        return 1;
+    }
+    if (data_msg_ == data_version_) {
+        return 0;
+    }
+    api->download(data_msg_, std::format("{}{}/{}", root_path, attr.st_ino, n));
+    return 0;
+}
 
-void tgfs_inode::set_attr(struct stat attr) { attr_ = attr; }
-
-uint64_t tgfs_inode::get_version() { return version_; }
-
-void tgfs_inode::set_version(uint64_t version) { version_ = version; }
+int tgfs_inode::upload_data(tgfs_net_api *api, int n,
+                            const std::string &root_path) {
+    if (n != 0) {
+        return 1;
+    }
+    data_version_ =
+        api->upload(std::format("{}{}/{}", root_path, attr.st_ino, n));
+    api->remove(data_msg_);
+    data_msg_ = data_version_;
+    return 0;
+}
