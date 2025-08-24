@@ -19,6 +19,7 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       messages_{table_path_} {
     tgfs_dir *root = new tgfs_dir(FUSE_ROOT_ID, FUSE_ROOT_ID);
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
+    api_->upload_table(table_path_);
 }
 
 int tgfs_data::update_table() {
