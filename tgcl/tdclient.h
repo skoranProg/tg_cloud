@@ -21,7 +21,7 @@ namespace td_api = td::td_api;
 class TdClass {
 public:
 
-    TdClass(std::int32_t api_id, std::string api_hash) : api_id_(api_id), api_hash_(std::move(api_hash)) {
+    TdClass(std::int32_t api_id, const std::string &api_hash, const std::string &database_directory) : api_id_(api_id), api_hash_(api_hash), database_directory_(database_directory) {
         td::ClientManager::execute(td_api::make_object<td_api::setLogVerbosityLevel>(1));
         client_manager_ = std::make_unique<td::ClientManager>();
         client_id_ = client_manager_->create_client_id();
@@ -88,6 +88,7 @@ private:
     bool need_restart_{false};
     std::int32_t api_id_{0};
     std::string api_hash_;
+    std::string database_directory_;
     std::uint64_t current_query_id_{0};
     std::uint64_t authentication_query_id_{0};
     bool are_alive_{true};
@@ -116,4 +117,4 @@ private:
     std::uint64_t NextQueryId();
 };
 
-TdClass create_td_client(int argc, char** argv);
+TdClass create_td_client(int argc, char** argv, const char* database_dir);

@@ -260,7 +260,7 @@ td_api::int53 TdClass::GetMainChatId() const {
 
 void TdClass::Restart()  {
     client_manager_.reset();
-    *this = TdClass(api_id_, api_hash_);
+    *this = TdClass(api_id_, api_hash_, database_directory_);
 }
 
 void TdClass::SendQuery(td_api::object_ptr<td_api::Function> f, std::function<void(Object)> handler) {
@@ -388,6 +388,7 @@ void TdClass::OnAuthorizationStateUpdate() {
                                           request->use_secret_chats_ = true;
                                           request->api_id_ = api_id_;
                                           request->api_hash_ = api_hash_;
+                                          request->database_directory_ = database_directory_;
                                           request->system_language_code_ = "en";
                                           request->device_model_ = "Desktop";
                                           request->application_version_ = "1.0";
@@ -468,7 +469,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 c
     return result;
 }
 
-TdClass create_td_client(int argc, char** argv) {
+TdClass create_td_client(int argc, char** argv, const char* database_dir) {
     if (argc == 0) {
         return {};
         // Treat error
@@ -486,7 +487,7 @@ TdClass create_td_client(int argc, char** argv) {
             return {};
         }
     }
-    TdClass td_client(std::stoi(argv[0]), argv[1]);
+    TdClass td_client(std::stoi(argv[0]), argv[1], database_dir);
     td_client.Start();
     td_client.SetMainChatId("tg_cloudfilesbot");
     return td_client;

@@ -16,7 +16,7 @@
 
 int main(int argc, char *argv[]) {
     Parser parser(argc, argv);
-    TdClass td_client = create_td_client(parser.get_tgcl_options().argc, parser.get_tgcl_options().argv);
+    TdClass td_client = create_td_client(parser.get_tgcl_options().argc, parser.get_tgcl_options().argv, parser.get_tgfs_options().argv[1]);
     td_client_api td_api(&td_client);
     return make_new_tgfs(parser.get_tgfs_options().argc, parser.get_tgfs_options().argv, &td_api);
 }
