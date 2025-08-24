@@ -32,5 +32,9 @@ int td_client_api::upload_table(const std::string &path) {
 }
 
 bool td_client_api::is_up_to_date_table() {
-    return client_->GetLastPinnedMessage(client_->GetMainChatId())->id_ == current_table_id_;
+    auto pinned = client_->GetLastPinnedMessage(client_->GetMainChatId());
+    if (pinned == nullptr) {
+        return false;
+    }
+    return pinned->id_ == current_table_id_;
 }
