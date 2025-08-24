@@ -12,7 +12,6 @@ void Parser::parse() {
     char** api_hash = find_option("-api_hash", true);
     if (api_hash == nullptr || api_id == nullptr) {
         // Treat errors
-        return;
     } else {
         tgcl_argv_.push_back(*(api_id + 1));
         tgcl_argv_.push_back(*(api_hash + 1));
