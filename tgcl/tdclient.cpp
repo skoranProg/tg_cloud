@@ -1,4 +1,7 @@
 #include "tdclient.h"
+#include "../parser/parser.h"
+
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <thread>
@@ -463,4 +466,27 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 c
         ProcessResponse(client_manager_->receive(0));
     }
     return result;
+}
+
+TdClass create_td_client(int argc, char** argv) {
+    if (argc == 0) {
+        // Treat error
+    }
+    for (auto &s : stop_options) {
+        if (strcmp(argv[0], s.c_str()) == 0) {
+            if (strcmp(argv[0], "--help") == 0 || strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "-hv") == 0) {
+                std::cout << "    -api_hash [api_hash]   api hash of telegram app\n    -api_id [api_id]       api id of telegram app\n";
+            }
+            if (strcmp(argv[0], "--version") == 0 || strcmp(argv[0], "-v") == 0 || strcmp(argv[0], "-hv") == 0) {
+                // TODO
+                std::cout << "TDlib version:\n";
+
+            }
+            return {};
+        }
+    }
+    TdClass td_client(std::stoi(argv[0]), argv[1]);
+    td_client.Start();
+    td_client.SetMainChatId("tg_cloudfilesbot");
+    return td_client;
 }
