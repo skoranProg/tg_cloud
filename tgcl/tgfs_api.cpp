@@ -16,7 +16,11 @@ uint64_t td_client_api::upload(const std::string &path)  {
 }
 
 int td_client_api::download_table(const std::string &path) {
-    current_table_id_ = client_->GetLastPinnedMessage(client_->GetMainChatId())->id_;
+    auto pinned = client_->GetLastPinnedMessage(client_->GetMainChatId());
+    if (pinned == nullptr) {
+        return 2;
+    }
+    current_table_id_ = pinned->id_;
     download(current_table_id_, path);
     return 0;
 };
