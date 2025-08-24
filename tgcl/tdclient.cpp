@@ -470,6 +470,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 c
 
 TdClass create_td_client(int argc, char** argv) {
     if (argc == 0) {
+        return {};
         // Treat error
     }
     for (auto &s : stop_options) {
