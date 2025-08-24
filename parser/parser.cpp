@@ -1,37 +1,41 @@
 #include "parser.h"
 
+
 void Parser::parse() {
-    char** api_id = find_option("-api_id");
-    char** api_hash = find_option("-api_hash");
+    for (const auto &s : stop_options) {
+        if (find_option(s)) {
+            tgcl_argv_.push_back(*find_option(s));
+        }
+    }
+
+    char** api_id = find_option("-api_id", true);
+    char** api_hash = find_option("-api_hash", true);
     if (api_hash == nullptr || api_id == nullptr) {
         // Treat errors
         return;
+    } else {
+        tgcl_argv_.push_back(*(api_id + 1));
+        tgcl_argv_.push_back(*(api_hash + 1));
     }
-    tgcl_argc_ = 2;
-    tgcl_argv_ = std::vector<char*>(tgcl_argc_);
-    tgcl_argv_[0] = *(api_id + 1);
-    tgcl_argv_[1] = *(api_hash + 1);
-    tgfs_argc_ = argc_ - 2 * tgcl_argc_;
-    tgfs_argv_ = std::vector<char*>(tgfs_argc_);
     int current_size = 0;
     for (auto it = argv_; it != argv_ + argc_; it++) {
         if (it != api_id && it != api_hash && it != api_id + 1 && it != api_hash + 1) {
-            tgfs_argv_[current_size++] = *it;
+            tgfs_argv_.push_back(*it);
         }
     }
 }
 
-std::pair<int, char **> Parser::get_tgfs_options() {
-    return std::make_pair(tgfs_argc_, tgfs_argv_.data());
+Parser::options Parser::get_tgfs_options() {
+    return {static_cast<int>(tgfs_argv_.size()), tgfs_argv_.data()};
 }
 
-std::pair<int, char **> Parser::get_tgcl_options() {
-    return std::make_pair(tgcl_argc_, tgcl_argv_.data());
+Parser::options Parser::get_tgcl_options() {
+    return {static_cast<int>(tgcl_argv_.size()), tgcl_argv_.data()};
 }
 
-char** Parser::find_option(const std::string& option) {
+char** Parser::find_option(const std::string& option, bool not_last) {
     auto op = std::find(argv_, argv_ + argc_, option);
-    if (op != argv_ + argc_ && op + 1 != argv_ + argc_) {
+    if (op != argv_ + argc_ && (op + 1 != argv_ + argc_ || !not_last)) {
         return op;
     }
     return nullptr;

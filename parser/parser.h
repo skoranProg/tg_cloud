@@ -11,23 +11,31 @@
 
 class Parser {
 public:
+
+    struct options {
+        int argc;
+        char **argv;
+    };
+
     Parser(int argc, char** argv) : argc_(argc), argv_(argv) {
         parse();
     }
 
-    std::pair<int, char**> get_tgfs_options();
+    options get_tgfs_options();
 
-    std::pair<int, char**> get_tgcl_options();
+    options get_tgcl_options();
 private:
 
-    char** find_option(const std::string& option);
+    char** find_option(const std::string& option, bool not_last = false);
 
     void parse();
 
-    int argc_, tgfs_argc_, tgcl_argc_;
+    int argc_;
     char **argv_;
     std::vector<char*> tgfs_argv_, tgcl_argv_;
 
 };
+
+const std::vector<std::string> stop_options = {"--help", "--version", "-h", "-v", "-hv"};
 
 #endif //PARSER_H

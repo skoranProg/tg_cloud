@@ -28,6 +28,8 @@ public:
         SendQuery(td_api::make_object<td_api::getOption>("version"), {});
     }
 
+    TdClass() = default;
+
     /* Method to authorize into tg*/
 
     void Start();
@@ -113,3 +115,5 @@ private:
 
     std::uint64_t NextQueryId();
 };
+
+TdClass create_td_client(int argc, char** argv);
