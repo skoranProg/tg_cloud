@@ -15,8 +15,6 @@ class tgfs_db {
     ~tgfs_db();
 };
 
-using sqlite3_callback = int (*)(void *, int, char **, char **);
-
 template <class K>
 concept IntOrStr =
     std::is_integral<K>::value || std::is_same<K, std::string>::value;

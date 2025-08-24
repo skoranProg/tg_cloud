@@ -23,7 +23,7 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
         return;
     }
 
-    fuse_ino_t ino = parent_dir->lookup(name);
+    fuse_ino_t ino = parent_dir->at(name);
     struct fuse_entry_param e = {
         .ino = ino,
         .attr = context->lookup_inode(ino)->attr,
@@ -102,7 +102,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     if (context->upload(ino_obj) != 0) {
         // TODO : handle exception
     }
-    parent_dir->add(name, ino);
+    parent_dir->set(name, ino);
     if (context->upload(parent) != 0) {
         // TODO : handle exception
     }
