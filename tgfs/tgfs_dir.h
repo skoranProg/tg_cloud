@@ -15,7 +15,7 @@ class tgfs_dir : public tgfs_inode, public tgfs_table<std::string, fuse_ino_t> {
  public:
     tgfs_dir(const std::string &root_path, fuse_ino_t self, fuse_ino_t parent);
 
-    const std::pair<fuse_ino_t, std::string> *next(fuse_ino_t ino) const;
+    std::vector<std::pair<fuse_ino_t, std::string>> next(fuse_ino_t ino, int n) const;
 };
 
 #endif

@@ -22,13 +22,27 @@ tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self,
     set("..", parent);
 }
 
-const std::pair<fuse_ino_t, std::string> *tgfs_dir::next(fuse_ino_t ino) const {
-    if (ino + 1 <= 0) {
-        return nullptr;
+std::vector<std::pair<uint64_t, std::string>> tgfs_dir::next(uint64_t off,
+                                                             int n) const {
+    std::vector<std::pair<uint64_t, std::string>> res;
+    res.reserve(n);
+    char *err;
+    sqlite3_exec(
+        table_,
+        std::format(
+            "SELECT rowid, my_key FROM my_table WHERE rowid > {} LIMIT {};",
+            off, n)
+            .c_str(),
+        [](void *res, int n, char *values[], char *columns[]) {
+            reinterpret_cast<std::vector<std::pair<uint64_t, std::string>> *>(
+                res)
+                ->emplace_back(*reinterpret_cast<uint64_t *>(columns[0]),
+                               std::string(columns[1]));
+            return 0;
+        },
+        &res, &err);
+    if (err) {
+        sqlite3_free(err);
     }
-    auto ub_iter = rev_ftable.lower_bound(std::make_pair(ino + 1, ""));
-    if (ub_iter == rev_ftable.end()) {
-        return nullptr;
-    }
-    return &(*ub_iter);
+    return res;
 }
