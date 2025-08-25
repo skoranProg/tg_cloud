@@ -126,28 +126,28 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     size_t rem = size;
     off_t nextoff = off;
 
-    // while (true) {
-    //     size_t entsize;
-    //     const char *name;
-    //     const std::pair<fuse_ino_t, std::string> *ent;
-    //     ent = dir->next(nextoff);
-    //     if (ent == nullptr) {
-    //         break;
-    //     }
-    //     nextoff = ent->first;
-
-    //     struct stat st = context->lookup_inode(ent->first)->attr;
-    //     entsize =
-    //         fuse_add_direntry(req, p, rem, ent->second.c_str(), &st, nextoff);
-    //     if (entsize > rem) {
-    //         break;
-    //     }
-    //     p += entsize;
-    //     rem -= entsize;
-    // }
-
-    std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> ents = dir->next(off, 1);
-
+    while (true) {
+        std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> ents =
+            dir->next(nextoff, 1);
+        size_t entsize;
+        if (ents.empty()) {
+            break;
+        }
+        for (const std::tuple<uint64_t, std::string, fuse_ino_t> &ent : ents) {
+            tgfs_inode *entino = context->lookup_inode(std::get<2>(ent));
+            nextoff = std::get<0>(ent);
+            entsize = fuse_add_direntry(req, p, rem, std::get<1>(ent).c_str(),
+                                        &(entino->attr), nextoff);
+            if (entsize > rem) {
+                break;
+            }
+            p += entsize;
+            rem -= entsize;
+        }
+        if (entsize > rem) {
+            break;
+        }
+    }
 
     fuse_reply_buf(req, buf, size - rem);
 }

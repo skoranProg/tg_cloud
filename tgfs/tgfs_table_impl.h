@@ -80,7 +80,7 @@ template <IntOrStr K, std::integral V> bool tgfs_table<K, V>::contains(K key) {
         std::format("SELECT my_key FROM my_table WHERE my_key = {};",
                     tgfs_sql_key<K>{key})
             .c_str(),
-        [](void *res, int n, const char *values[], const char *columns[]) {
+        [](void *res, int n, char *values[], char *columns[]) {
             *reinterpret_cast<bool *>(res) = true;
             return 1;
         },
