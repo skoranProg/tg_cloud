@@ -22,22 +22,24 @@ tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self,
     set("..", parent);
 }
 
-std::vector<std::pair<uint64_t, std::string>> tgfs_dir::next(uint64_t off,
-                                                             int n) const {
-    std::vector<std::pair<uint64_t, std::string>> res;
+std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> tgfs_dir::next(
+    uint64_t off, int n) const {
+    std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> res;
     res.reserve(n);
     char *err;
     sqlite3_exec(
         table_,
-        std::format(
-            "SELECT rowid, my_key FROM my_table WHERE rowid > {} LIMIT {};",
-            off, n)
+        std::format("SELECT rowid, my_key, my_value FROM my_table WHERE rowid "
+                    "> {} LIMIT {};",
+                    off, n)
             .c_str(),
         [](void *res, int n, char *values[], char *columns[]) {
-            reinterpret_cast<std::vector<std::pair<uint64_t, std::string>> *>(
+            reinterpret_cast<
+                std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> *>(
                 res)
                 ->emplace_back(*reinterpret_cast<uint64_t *>(columns[0]),
-                               std::string(columns[1]));
+                               std::string(columns[1]),
+                               *reinterpret_cast<fuse_ino_t *>(columns[2]));
             return 0;
         },
         &res, &err);

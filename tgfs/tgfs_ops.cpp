@@ -126,25 +126,28 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     size_t rem = size;
     off_t nextoff = off;
 
-    while (true) {
-        size_t entsize;
-        const char *name;
-        const std::pair<fuse_ino_t, std::string> *ent;
-        ent = dir->next(nextoff);
-        if (ent == nullptr) {
-            break;
-        }
-        nextoff = ent->first;
+    // while (true) {
+    //     size_t entsize;
+    //     const char *name;
+    //     const std::pair<fuse_ino_t, std::string> *ent;
+    //     ent = dir->next(nextoff);
+    //     if (ent == nullptr) {
+    //         break;
+    //     }
+    //     nextoff = ent->first;
 
-        struct stat st = context->lookup_inode(ent->first)->attr;
-        entsize =
-            fuse_add_direntry(req, p, rem, ent->second.c_str(), &st, nextoff);
-        if (entsize > rem) {
-            break;
-        }
-        p += entsize;
-        rem -= entsize;
-    }
+    //     struct stat st = context->lookup_inode(ent->first)->attr;
+    //     entsize =
+    //         fuse_add_direntry(req, p, rem, ent->second.c_str(), &st, nextoff);
+    //     if (entsize > rem) {
+    //         break;
+    //     }
+    //     p += entsize;
+    //     rem -= entsize;
+    // }
+
+    std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> ents = dir->next(off, 1);
+
 
     fuse_reply_buf(req, buf, size - rem);
 }
