@@ -121,3 +121,7 @@ int tgfs_data::update(fuse_ino_t ino) {
     inodes_[ino]->update_data(api_, 0, root_path_);
     return 0;
 }
+
+fuse_ino_t tgfs_data::new_ino() {
+    return ++last_ino_;
+}

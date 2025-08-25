@@ -53,7 +53,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         return;
     }
 
-    fuse_ino_t ino = get_new_ino(*context);
+    fuse_ino_t ino = context->new_ino();
 
     std::string local_fname = std::to_string(ino);
     if (mkdirat(context->get_root_fd(), local_fname.c_str(), S_IFDIR | 0777) ==
