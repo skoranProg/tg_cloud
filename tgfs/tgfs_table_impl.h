@@ -1,17 +1,19 @@
 #ifndef _TGFS_TABLE_IMPL_H_
 #define _TGFS_TABLE_IMPL_H_
 
-#include "tgfs_table.h"
 #include <format>
 
-template <IntOrStr T> struct tgfs_sql_key {
+#include "tgfs_table.h"
+
+template <IntOrStr T>
+struct tgfs_sql_key {
     T key;
 };
 
 namespace std {
 
-template <> struct formatter<tgfs_sql_key<string>, char> {
-
+template <>
+struct formatter<tgfs_sql_key<string>, char> {
     template <class ParseContext>
     constexpr ParseContext::iterator parse(ParseContext &ctx) {
         return ctx.end();
@@ -26,18 +28,18 @@ template <> struct formatter<tgfs_sql_key<string>, char> {
 
 template <integral T>
 struct formatter<tgfs_sql_key<T>, char> : formatter<T, char> {
-
     template <class FmtContext>
     FmtContext::iterator format(tgfs_sql_key<T> val, FmtContext &ctx) const {
         return formatter<T, char>::format(val.key, ctx);
     }
 };
 
-} // namespace std
+}  // namespace std
 
 #pragma mmap_size = 268435456;
 
-template <IntOrStr K, std::integral V> int tgfs_table<K, V>::init() {
+template <IntOrStr K, std::integral V>
+int tgfs_table<K, V>::init() {
     char *err;
     sqlite3_exec(table_,
                  std::format("CREATE TABLE my_table ("
@@ -53,7 +55,8 @@ template <IntOrStr K, std::integral V> int tgfs_table<K, V>::init() {
     return 0;
 }
 
-template <IntOrStr K, std::integral V> V tgfs_table<K, V>::at(K key) {
+template <IntOrStr K, std::integral V>
+V tgfs_table<K, V>::at(K key) {
     V res = 0;
     char *err;
     sqlite3_exec(
@@ -72,7 +75,8 @@ template <IntOrStr K, std::integral V> V tgfs_table<K, V>::at(K key) {
     return res;
 }
 
-template <IntOrStr K, std::integral V> bool tgfs_table<K, V>::contains(K key) {
+template <IntOrStr K, std::integral V>
+bool tgfs_table<K, V>::contains(K key) {
     bool res = false;
     char *err;
     sqlite3_exec(
@@ -80,7 +84,7 @@ template <IntOrStr K, std::integral V> bool tgfs_table<K, V>::contains(K key) {
         std::format("SELECT my_key FROM my_table WHERE my_key = {};",
                     tgfs_sql_key<K>{key})
             .c_str(),
-        [](void *res, int n, const char *values[], const char *columns[]) {
+        [](void *res, int n, char *values[], char *columns[]) {
             *reinterpret_cast<bool *>(res) = true;
             return 1;
         },
@@ -108,7 +112,8 @@ int tgfs_table<K, V>::set(K key, V value) {
     return 0;
 }
 
-template <IntOrStr K, std::integral V> int tgfs_table<K, V>::remove(K key) {
+template <IntOrStr K, std::integral V>
+int tgfs_table<K, V>::remove(K key) {
     char *err;
     sqlite3_exec(table_,
                  std::format("DELETE FROM my_table WHERE my_key = {};",
