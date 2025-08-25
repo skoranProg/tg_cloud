@@ -124,7 +124,7 @@ td::tl_object_ptr<td_api::file> TdClass::DownloadFile(int32_t file_id, bool wait
     SendQuery(std::move(dw), [this, &result, &isDownloaded](Object object) {
 
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << to_string(object);
+            std::cerr << "Problem downloading file:\n"<<to_string(object) << std::endl;
             return;
         }
         isDownloaded = true;
@@ -152,7 +152,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 c
     SendQuery(std::move(history), [this, &wait, &last_message](Object object) {
                     wait = false;
                     if (object->get_id() == td_api::error::ID) {
-                        std::cerr << to_string(object);
+                        std::cerr << "Problem Getting last message in the chat:\n" << to_string(object) << std::endl;
                         return;
                     }
                     auto mes = td::move_tl_object_as<td_api::messages>(object);
@@ -188,7 +188,7 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
     td_api::int53 result_mes_id = -1;
     SendQuery(std::move(send_message), [this, &wait, &file_id, &result_mes_id](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem while sending file\n";
+            std::cerr << "Problem while sending file\n" << to_string(object) << std::endl;
             return;
         }
         auto mes = td::move_tl_object_as<td_api::message>(object);
@@ -200,6 +200,9 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
     });
     while (wait) {
         ProcessResponse(client_manager_->receive(0));;
+    }
+    if (result_mes_id == -1) {
+        return result_mes_id;
     }
     while (!completed_uploads_[file_id]) {
 
@@ -218,7 +221,7 @@ td_api::int53 TdClass::GetChatId(const std::string& username) {
     SendQuery(std::move(find_chat), [this, &id](Object object) {
 
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << to_string(object);
+            std::cerr << "Problem Getting chat id:\n" << to_string(object) << std::endl;
             id = -1;
             return;
         }
@@ -238,7 +241,7 @@ void TdClass::DeleteMessage(td_api::int53 chat_id, td_api::int53 message_id) {
     bool wait = true;
     SendQuery(std::move(del_mes), [this, &wait](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << to_string(object);
+            std::cerr << "Problem Deleting message:\n" << to_string(object) << std::endl;
             wait = false;
             return;
         }
@@ -489,6 +492,6 @@ TdClass create_td_client(int argc, char** argv, const char* database_dir) {
     }
     TdClass td_client(std::stoi(argv[0]), argv[1], database_dir);
     td_client.Start();
-    td_client.SetMainChatId("tg_cloudfilesbot");
+    td_client.SetMainChatId("@tg_cloudfiles1bot");
     return td_client;
 }

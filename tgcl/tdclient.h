@@ -22,7 +22,7 @@ class TdClass {
 public:
 
     TdClass(std::int32_t api_id, const std::string &api_hash, const std::string &database_directory) : api_id_(api_id), api_hash_(api_hash), database_directory_(database_directory) {
-        td::ClientManager::execute(td_api::make_object<td_api::setLogVerbosityLevel>(1));
+        td::ClientManager::execute(td_api::make_object<td_api::setLogVerbosityLevel>(0));
         client_manager_ = std::make_unique<td::ClientManager>();
         client_id_ = client_manager_->create_client_id();
         SendQuery(td_api::make_object<td_api::getOption>("version"), {});
