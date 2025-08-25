@@ -50,6 +50,7 @@ int tgfs_table<K, V>::init() {
                      .c_str(),
                  nullptr, nullptr, &err);
     if (err) {
+        std::cerr << err << std::endl;
         sqlite3_free(err);
     }
     return 0;
@@ -59,8 +60,6 @@ template <IntOrStr K, std::integral V>
 V tgfs_table<K, V>::at(K key) {
     V res = 0;
     char *err;
-    std::cerr << "DB at() !!!  " << std::format("{}", tgfs_sql_key{key})
-              << std::endl;
     sqlite3_exec(
         table_,
         std::format("SELECT my_value FROM my_table WHERE my_key = {};",
@@ -72,8 +71,11 @@ V tgfs_table<K, V>::at(K key) {
         },
         &res, &err);
     if (err) {
+        std::cerr << err << std::endl;
         sqlite3_free(err);
     }
+    std::cerr << "DB at() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
+              << std::endl;
     return res;
 }
 
@@ -92,10 +94,12 @@ bool tgfs_table<K, V>::contains(K key) {
         },
         &res, &err);
     if (err) {
+        std::cerr << err << std::endl;
         sqlite3_free(err);
     }
-    std::cerr << "DB contains() !!!  " << std::format("{}", tgfs_sql_key{key})
-              << ' ' << (res ? "true" : "false") << std::endl;
+    std::cerr << "DB contains() !!!  "
+              << std::format("{}", tgfs_sql_key<K>{key}) << ' '
+              << (res ? "true" : "false") << std::endl;
     return res;
 }
 
@@ -111,9 +115,10 @@ int tgfs_table<K, V>::set(K key, V value) {
             .c_str(),
         nullptr, nullptr, &err);
     if (err) {
+        std::cerr << err << std::endl;
         sqlite3_free(err);
     }
-    std::cerr << "DB insert() !!!  " << std::format("{}", tgfs_sql_key{key})
+    std::cerr << "DB insert() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
               << ' ' << value << std::endl;
     return 0;
 }
@@ -127,9 +132,10 @@ int tgfs_table<K, V>::remove(K key) {
                      .c_str(),
                  nullptr, nullptr, &err);
     if (err) {
+        std::cerr << err << std::endl;
         sqlite3_free(err);
     }
-    std::cerr << "DB remove() !!!  " << std::format("{}", tgfs_sql_key{key})
+    std::cerr << "DB remove() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
               << std::endl;
     return 0;
 }
