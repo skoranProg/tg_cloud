@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -78,7 +79,26 @@ public:
 
     td::tl_object_ptr<td_api::file> DownloadFileFromMes(td::tl_object_ptr<td_api::message> mes);
 
+    void SetFd(int fd_);
+
 private:
+
+    class FD {
+        public:
+            FD() : fd(-1) {}
+
+            FD(int fd) : fd(fd) {}
+
+            ~FD() {
+                if (fd >= 0) {
+                    close(fd);
+                }
+            }
+
+            int fd;
+
+    };
+
     using Object = td_api::object_ptr<td_api::Object>;
     std::unique_ptr<td::ClientManager> client_manager_;
     std::int32_t client_id_{0};
@@ -99,6 +119,7 @@ private:
     std::unordered_map<std::int64_t, int> completed_downloads_;
     std::unordered_map<std::int64_t, td_api::int53> sent_message_;
 
+    FD database_fd_; // database_dir fd
 
     void Restart();
 

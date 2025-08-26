@@ -476,15 +476,19 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 c
     return result;
 }
 
-std::string create_fd_path(const char* path) {
+std::pair<std::string, int> create_fd_path(const char* path) {
     int fd_dir = open(path, O_RDONLY | O_DIRECTORY);
     if (fd_dir == -1) {
         std::cerr << "Error opening directory: " << strerror(errno) << std::endl;
-        return path;
+        return {path, -1};
     }
-    pid_t pid = getpid();
-    return "/proc/" + std::to_string(pid) + "/fd/" + std::to_string(fd_dir);
+    return {"/proc/self/fd/" + std::to_string(fd_dir), fd_dir};
 }
+
+void TdClass::SetFd(int fd_) {
+    database_fd_.fd = fd_;
+}
+
 
 TdClass create_td_client(int argc, char** argv, const char* database_dir) {
     if (argc == 0) {
@@ -504,7 +508,9 @@ TdClass create_td_client(int argc, char** argv, const char* database_dir) {
             return {};
         }
     }
-    TdClass td_client(std::stoi(argv[0]), argv[1], create_fd_path(database_dir));
+    auto [path, fd] = create_fd_path(database_dir);
+    TdClass td_client(std::stoi(argv[0]), argv[1], path);
+    td_client.SetFd(fd);
     td_client.Start();
     td_client.SetMainChatId("@tg_cloudfiles1bot");
     return td_client;
