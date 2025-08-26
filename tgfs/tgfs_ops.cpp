@@ -55,23 +55,12 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 
     fuse_ino_t ino = context->new_ino();
 
-    std::string local_fname = std::to_string(ino);
-    if (mkdirat(context->get_root_fd(), local_fname.c_str(), S_IFDIR | 0777) ==
-        -1) {
+    tgfs_inode *ino_obj = make_new_files<tgfs_inode>(*context, ino);
+
+    if (ino_obj == nullptr) {
         fuse_reply_err(req, errno);
         return;
     }
-
-    int fd =
-        openat(context->get_root_fd(),
-               std::format("{}/inode", local_fname).c_str(), O_CREAT | O_RDWR);
-    ftruncate(fd, sizeof(tgfs_inode));
-    tgfs_inode *ino_obj = reinterpret_cast<tgfs_inode *>(mmap(
-        NULL, sizeof(tgfs_inode), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
-    close(fd);
-
-    mknodat(context->get_root_fd(), std::format("{}/0", local_fname).c_str(),
-            S_IFREG | O_RDWR, 0);
 
     struct fuse_entry_param e = {
         .ino = ino,

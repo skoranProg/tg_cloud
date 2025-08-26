@@ -17,8 +17,12 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       debug_{debug},
       inodes_{},
       messages_{table_path_} {
-    tgfs_dir *root = new tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
+    tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
+    new (root) tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
+    if (!messages_.contains(FUSE_ROOT_ID)) {
+        messages_.set(FUSE_ROOT_ID, 0);
+    }
 }
 
 int tgfs_data::update_table() {
@@ -113,11 +117,19 @@ int tgfs_data::update(fuse_ino_t ino) {
         if (msg == inodes_[ino]->version) {
             return 0;
         }
-        munmap(inodes_[ino], sizeof(tgfs_inode));
+        if (S_ISDIR(inodes_[ino]->attr.st_mode)) {
+            munmap(inodes_[ino], sizeof(tgfs_dir));
+        } else {
+            munmap(inodes_[ino], sizeof(tgfs_inode));
+        }
         inodes_.erase(ino);
     }
     api_->download(msg, std::format("{}{}/inode", root_path_, ino));
-    inodes_[ino] = map_inode(*this, ino);
+    inodes_[ino] = map_inode<tgfs_inode>(*this, ino);
+    if (S_ISDIR(inodes_[ino]->attr.st_mode)) {
+        munmap(inodes_[ino], sizeof(tgfs_dir));
+        inodes_[ino] = map_inode<tgfs_dir>(*this, ino);
+    }
     inodes_[ino]->update_data(api_, 0, root_path_);
     return 0;
 }

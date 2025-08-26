@@ -14,7 +14,6 @@ add_executable(tg_cloud
         tgfs/tgfs_ops.cpp
         tgfs/tgfs_data.cpp
         tgfs/tgfs_dir.cpp
-        tgfs/tgfs_helpers.cpp
         tgfs/tgfs_inode.cpp
         tgfs/tgfs_table.cpp
 )
