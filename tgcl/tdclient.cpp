@@ -5,6 +5,10 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string>
+#include <cstdio>
 
 namespace detail {
     template <class... Fs>
@@ -472,6 +476,16 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 c
     return result;
 }
 
+std::string create_fd_path(const char* path) {
+    int fd_dir = open(path, O_RDONLY | O_DIRECTORY);
+    if (fd_dir == -1) {
+        std::cerr << "Error opening directory: " << strerror(errno) << std::endl;
+        return path;
+    }
+    pid_t pid = getpid();
+    return "/proc/" + std::to_string(pid) + "/fd/" + std::to_string(fd_dir);
+}
+
 TdClass create_td_client(int argc, char** argv, const char* database_dir) {
     if (argc == 0) {
         return {};
@@ -490,7 +504,7 @@ TdClass create_td_client(int argc, char** argv, const char* database_dir) {
             return {};
         }
     }
-    TdClass td_client(std::stoi(argv[0]), argv[1], database_dir);
+    TdClass td_client(std::stoi(argv[0]), argv[1], create_fd_path(database_dir));
     td_client.Start();
     td_client.SetMainChatId("@tg_cloudfiles1bot");
     return td_client;
