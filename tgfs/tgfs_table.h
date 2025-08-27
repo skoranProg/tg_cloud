@@ -1,27 +1,31 @@
 #ifndef _TGFS_TABLE_H_
 #define _TGFS_TABLE_H_
 
-#include "../SQLiteCpp/sqlite3/sqlite3.h"
+#include <stdint.h>
+
 #include <concepts>
 #include <format>
-#include <stdint.h>
 #include <string>
 
+#include "../SQLiteCpp/sqlite3/sqlite3.h"
+
 class tgfs_db {
-  public:
+ public:
     sqlite3 *table_;
 
     explicit tgfs_db(const std::string &path);
     ~tgfs_db();
+
+    void sync();
 };
 
 template <class K>
 concept IntOrStr =
     std::is_integral<K>::value || std::is_same<K, std::string>::value;
 
-template <IntOrStr K, std::integral V> class tgfs_table : public tgfs_db {
-
-  public:
+template <IntOrStr K, std::integral V>
+class tgfs_table : public tgfs_db {
+ public:
     explicit tgfs_table(const std::string &path) : tgfs_db{path} {}
 
     int init();

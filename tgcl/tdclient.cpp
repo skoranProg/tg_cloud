@@ -1,7 +1,14 @@
 #include "tdclient.h"
+#include "../parser/parser.h"
+
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string>
+#include <cstdio>
 
 namespace detail {
     template <class... Fs>
@@ -121,7 +128,7 @@ td::tl_object_ptr<td_api::file> TdClass::DownloadFile(int32_t file_id, bool wait
     SendQuery(std::move(dw), [this, &result, &isDownloaded](Object object) {
 
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << to_string(object);
+            std::cerr << "Problem downloading file:\n"<<to_string(object) << std::endl;
             return;
         }
         isDownloaded = true;
@@ -149,7 +156,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(const td_api::int53 c
     SendQuery(std::move(history), [this, &wait, &last_message](Object object) {
                     wait = false;
                     if (object->get_id() == td_api::error::ID) {
-                        std::cerr << to_string(object);
+                        std::cerr << "Problem Getting last message in the chat:\n" << to_string(object) << std::endl;
                         return;
                     }
                     auto mes = td::move_tl_object_as<td_api::messages>(object);
@@ -185,7 +192,7 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
     td_api::int53 result_mes_id = -1;
     SendQuery(std::move(send_message), [this, &wait, &file_id, &result_mes_id](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem while sending file\n";
+            std::cerr << "Problem while sending file\n" << to_string(object) << std::endl;
             return;
         }
         auto mes = td::move_tl_object_as<td_api::message>(object);
@@ -197,6 +204,9 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
     });
     while (wait) {
         ProcessResponse(client_manager_->receive(0));;
+    }
+    if (result_mes_id == -1) {
+        return result_mes_id;
     }
     while (!completed_uploads_[file_id]) {
 
@@ -215,7 +225,7 @@ td_api::int53 TdClass::GetChatId(const std::string& username) {
     SendQuery(std::move(find_chat), [this, &id](Object object) {
 
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << to_string(object);
+            std::cerr << "Problem Getting chat id:\n" << to_string(object) << std::endl;
             id = -1;
             return;
         }
@@ -235,7 +245,7 @@ void TdClass::DeleteMessage(td_api::int53 chat_id, td_api::int53 message_id) {
     bool wait = true;
     SendQuery(std::move(del_mes), [this, &wait](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << to_string(object);
+            std::cerr << "Problem Deleting message:\n" << to_string(object) << std::endl;
             wait = false;
             return;
         }
@@ -257,7 +267,7 @@ td_api::int53 TdClass::GetMainChatId() const {
 
 void TdClass::Restart()  {
     client_manager_.reset();
-    *this = TdClass(api_id_, api_hash_);
+    *this = TdClass(api_id_, api_hash_, database_directory_);
 }
 
 void TdClass::SendQuery(td_api::object_ptr<td_api::Function> f, std::function<void(Object)> handler) {
@@ -385,6 +395,7 @@ void TdClass::OnAuthorizationStateUpdate() {
                                           request->use_secret_chats_ = true;
                                           request->api_id_ = api_id_;
                                           request->api_hash_ = api_hash_;
+                                          request->database_directory_ = database_directory_;
                                           request->system_language_code_ = "en";
                                           request->device_model_ = "Desktop";
                                           request->application_version_ = "1.0";
@@ -463,4 +474,44 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 c
         ProcessResponse(client_manager_->receive(0));
     }
     return result;
+}
+
+std::pair<std::string, int> create_fd_path(const char* path) {
+    int fd_dir = open(path, O_RDONLY | O_DIRECTORY);
+    if (fd_dir == -1) {
+        std::cerr << "Error opening directory: " << strerror(errno) << std::endl;
+        return {path, -1};
+    }
+    return {"/proc/self/fd/" + std::to_string(fd_dir), fd_dir};
+}
+
+void TdClass::SetFd(int fd_) {
+    database_fd_.fd = fd_;
+}
+
+
+TdClass create_td_client(int argc, char** argv, const char* database_dir) {
+    if (argc == 0) {
+        return {};
+        // Treat error
+    }
+    for (auto &s : stop_options) {
+        if (strcmp(argv[0], s.c_str()) == 0) {
+            if (strcmp(argv[0], "--help") == 0 || strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "-hv") == 0) {
+                std::cout << "    -api_hash [api_hash]   api hash of telegram app\n    -api_id [api_id]       api id of telegram app\n";
+            }
+            if (strcmp(argv[0], "--version") == 0 || strcmp(argv[0], "-v") == 0 || strcmp(argv[0], "-hv") == 0) {
+                // TODO
+                std::cout << "TDlib version:\n";
+
+            }
+            return {};
+        }
+    }
+    auto [path, fd] = create_fd_path(database_dir);
+    TdClass td_client(std::stoi(argv[0]), argv[1], path);
+    td_client.SetFd(fd);
+    td_client.Start();
+    td_client.SetMainChatId("@tg_cloudfiles1bot");
+    return td_client;
 }

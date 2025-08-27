@@ -3,6 +3,8 @@
 #include "tgfs/tgfs.h"
 #include "tgfs/tgfs_data.h"
 
+#include "parser/parser.h"
+
 /* Api_id and api_hash should be passed as program args */
 
 #include <iostream>
@@ -10,9 +12,11 @@
 #include <sqlite3.h>
 #include <filesystem>
 
+#include "tgcl/tgfs_api.h"
+
 int main(int argc, char *argv[]) {
-    //return make_new_tgfs(argc, argv, nullptr);
-    TdClass td_client(std::stoi(argv[1]), argv[2]);
-    td_client.Start();
-    td_client.SetMainChatId("tg_cloudfilesbot");
+    Parser parser(argc, argv);
+    TdClass td_client = create_td_client(parser.get_tgcl_options().argc, parser.get_tgcl_options().argv, parser.get_tgfs_options().argv[1]);
+    td_client_api td_api(&td_client);
+    return make_new_tgfs(parser.get_tgfs_options().argc, parser.get_tgfs_options().argv, &td_api);
 }

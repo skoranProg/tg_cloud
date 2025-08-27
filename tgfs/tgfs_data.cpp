@@ -17,12 +17,15 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       debug_{debug},
       inodes_{},
       messages_{table_path_} {
+    update_table();
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
     new (root) tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
     if (!messages_.contains(FUSE_ROOT_ID)) {
         messages_.set(FUSE_ROOT_ID, 0);
     }
+    messages_.sync();
+    api_->upload_table(table_path_);
 }
 
 int tgfs_data::update_table() {
@@ -90,15 +93,18 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(fuse_ino_t ino) {
-    uint64_t msg = lookup_msg(ino);
-    if (msg == 0) {
-        return 1;
+    if (ino == FUSE_ROOT_ID) {
+        return 0;
     }
+    uint64_t msg = lookup_msg(ino);
     tgfs_inode *ino_obj = lookup_inode(ino);
     ino_obj->upload_data(api_, 0, root_path_);
     uint64_t new_msg = api_->upload(std::format("{}{}/inode", root_path_, ino));
-    api_->remove(msg);
+    if (msg != 0) {
+        api_->remove(msg);
+    }
     messages_.set(ino, new_msg);
+    messages_.sync();
     api_->upload_table(table_path_);
     return 0;
 }
