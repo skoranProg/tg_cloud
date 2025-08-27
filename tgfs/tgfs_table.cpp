@@ -8,7 +8,8 @@ tgfs_db::tgfs_db(const std::string &path) {
                  nullptr);
     // sqlite3_exec(table_, "PRAGMA synchronous=FULL;", nullptr, nullptr,
     // nullptr);
-    std::cerr << "DB open() !!! " << err << "  " << table_ << std::endl;
+    std::cerr << "DB open() !!! " << err << "  " << table_ << " " << path
+              << std::endl;
 }
 
 tgfs_db::~tgfs_db() {

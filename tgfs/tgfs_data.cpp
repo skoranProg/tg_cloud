@@ -89,9 +89,6 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(fuse_ino_t ino) {
-    if (ino == FUSE_ROOT_ID) {
-        return 0;
-    }
     uint64_t msg = lookup_msg(ino);
     tgfs_inode *ino_obj = lookup_inode(ino);
     ino_obj->upload_data(api_, 0, root_path_);
