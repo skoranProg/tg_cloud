@@ -18,6 +18,7 @@ tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self,
                  (uint64_t)0},
       tgfs_table<std::string, fuse_ino_t>{
           std::format("{}{}/0", root_path, self)} {
+    init();
     set(".", self);
     set("..", parent);
 }

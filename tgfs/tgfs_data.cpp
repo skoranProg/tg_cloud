@@ -21,11 +21,7 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
     new (root) tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
-    if (!messages_.contains(FUSE_ROOT_ID)) {
-        messages_.set(FUSE_ROOT_ID, 0);
-    }
-    messages_.sync();
-    api_->upload_table(table_path_);
+    upload(FUSE_ROOT_ID);
 }
 
 int tgfs_data::update_table() {
