@@ -26,21 +26,21 @@ T *map_inode(const tgfs_data &context, fuse_ino_t ino) {
 template <DerivedFromInode T>
 T *make_new_files(const tgfs_data &context, fuse_ino_t ino) {
     std::string local_fname = std::to_string(ino);
-    if (mkdirat(context.get_root_fd(), local_fname.c_str(), S_IFDIR | 0777) ==
+    if (mkdirat(context.get_root_fd(), local_fname.c_str(), S_IFDIR | 0755) ==
         -1) {
         return nullptr;
     }
 
-    int fd =
-        openat(context.get_root_fd(),
-               std::format("{}/inode", local_fname).c_str(), O_CREAT | O_RDWR);
+    int fd = openat(context.get_root_fd(),
+                    std::format("{}/inode", local_fname).c_str(),
+                    O_CREAT | O_RDWR, S_IFREG | 0666);
     ftruncate(fd, sizeof(T));
     T *ino_obj = reinterpret_cast<T *>(
         mmap(NULL, sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
     close(fd);
 
     mknodat(context.get_root_fd(), std::format("{}/0", local_fname).c_str(),
-            S_IFREG | O_RDWR, 0);
+            S_IFREG | 0666, 0);
     return ino_obj;
 }
 
