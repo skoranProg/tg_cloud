@@ -24,7 +24,9 @@ int tgfs_inode::upload_data(tgfs_net_api *api, int n,
     }
     data_version_ =
         api->upload(std::format("{}{}/{}", root_path, attr.st_ino, n));
-    api->remove(data_msg_);
+    if (data_msg_ != 0) {
+        api->remove(data_msg_);
+    }
     data_msg_ = data_version_;
     return 0;
 }

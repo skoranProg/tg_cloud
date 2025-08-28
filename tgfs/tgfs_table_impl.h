@@ -40,7 +40,7 @@ struct formatter<tgfs_sql_key<T>, char> : formatter<T, char> {
 template <IntOrStr K, std::integral V>
 int tgfs_table<K, V>::init() {
     char *err = nullptr;
-    std::cerr << "DB init() !!!" << std::endl;
+    std::cerr << "DB init() !!! " << table_ << std::endl;
     sqlite3_exec(table_,
                  std::format("CREATE TABLE my_table ( "
                              "my_key {} PRIMARY KEY, "
@@ -70,8 +70,8 @@ V tgfs_table<K, V>::at(K key) {
             return 1;
         },
         &res, &err);
-    std::cerr << "DB at() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
-              << std::endl;
+    std::cerr << "DB at() !!!  "
+              << std::format("{} {}", tgfs_sql_key<K>{key}, res) << std::endl;
     if (err) {
         std::cerr << err << std::endl;
         sqlite3_free(err);

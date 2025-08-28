@@ -14,8 +14,8 @@ tgfs_db::tgfs_db(const std::string &path) {
 
 tgfs_db::~tgfs_db() {
     sync();
+    std::cerr << "DB close() !!! " << table_ << std::endl;
     sqlite3_close(table_);
-    std::cerr << "DB close() !!!" << std::endl;
 }
 
 void tgfs_db::sync() {

@@ -3,6 +3,7 @@
 #include <sys/mman.h>
 
 #include <format>
+#include <iostream>
 
 #include "tgfs_helpers.h"
 
@@ -16,10 +17,11 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       max_filesize_{max_filesize},
       debug_{debug},
       inodes_{},
-      messages_{table_path_} {
-    update_table();
+      messages_{table_path_},
+      last_ino_{0} {
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
     new (root) tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
+    last_ino_ = FUSE_ROOT_ID;
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
     upload(FUSE_ROOT_ID);
 }

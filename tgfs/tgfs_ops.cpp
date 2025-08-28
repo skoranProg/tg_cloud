@@ -119,6 +119,7 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
         std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> ents =
             dir->next(nextoff, 1);
         size_t entsize;
+        bool exit = false;
         if (ents.empty()) {
             break;
         }
@@ -128,12 +129,13 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
             entsize = fuse_add_direntry(req, p, rem, std::get<1>(ent).c_str(),
                                         &(entino->attr), nextoff);
             if (entsize > rem) {
+                exit = true;
                 break;
             }
             p += entsize;
             rem -= entsize;
         }
-        if (entsize > rem) {
+        if (exit) {
             break;
         }
     }
