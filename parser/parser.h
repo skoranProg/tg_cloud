@@ -1,7 +1,3 @@
-//
-// Created by marat on 8/22/25.
-//
-
 #ifndef PARSER_H
 #define PARSER_H
 

@@ -1,9 +1,14 @@
 #include "tgfs_api.h"
+#include "../encryption/encrypt_file.h"
 #include <stdio.h>
 
 int td_client_api::download(uint64_t msg, const std::string &path)  {
     auto fl = client_->DownloadFileFromMes(client_->GetMessage(client_->GetMainChatId(), msg));
-    return rename(fl->local_->path_.c_str(),path.c_str());
+    int rename_res = rename(fl->local_->path_.c_str(),path.c_str());
+    if (!rename_res) {
+        return rename_res;
+    }
+    return encryptor_->encrypt(path, "");
 }
 
 int td_client_api::remove(uint64_t msg)  {
@@ -12,7 +17,10 @@ int td_client_api::remove(uint64_t msg)  {
 }
 
 uint64_t td_client_api::upload(const std::string &path)  {
-    return client_->SendFile(client_->GetMainChatId(), path);
+    encryptor_->encrypt(path, "");
+    uint64_t result = client_->SendFile(client_->GetMainChatId(), path);
+    encryptor_->decrypt(path, "");
+    return result;
 }
 
 int td_client_api::download_table(const std::string &path) {

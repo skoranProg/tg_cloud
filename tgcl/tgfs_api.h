@@ -2,10 +2,11 @@
 
 #include "../tgfs/tgfs.h"
 #include "tdclient.h"
+#include "../encryption/encrypt_file.h"
 
 class td_client_api : public tgfs_net_api {
 public:
-    td_client_api(TdClass* client_) : client_(client_) {
+    td_client_api(TdClass* client_, file_encryptor* encryptor_) : client_(client_), encryptor_(encryptor_) {
     }
 
     uint64_t upload(const std::string &path) override;
@@ -22,6 +23,8 @@ public:
     int upload_table(const std::string &path) override;
 private:
     TdClass* client_;
+
+    file_encryptor* encryptor_;
 
     uint64_t current_table_id_;
 };
