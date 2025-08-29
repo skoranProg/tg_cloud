@@ -13,7 +13,7 @@ int tgfs_inode::update_data(tgfs_net_api *api, int n,
     if (data_msg_ == data_version_) {
         return 0;
     }
-    api->download(data_msg_, std::format("{}{}/{}", root_path, attr.st_ino, n));
+    api->download(data_msg_, std::format("{}{}/data_{}", root_path, attr.st_ino, n));
     return 0;
 }
 
@@ -23,7 +23,7 @@ int tgfs_inode::upload_data(tgfs_net_api *api, int n,
         return 1;
     }
     data_version_ =
-        api->upload(std::format("{}{}/{}", root_path, attr.st_ino, n));
+        api->upload(std::format("{}{}/data_{}", root_path, attr.st_ino, n));
     if (data_msg_ != 0) {
         api->remove(data_msg_);
     }

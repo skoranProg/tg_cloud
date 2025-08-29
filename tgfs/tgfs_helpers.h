@@ -39,7 +39,7 @@ T *make_new_files(const tgfs_data &context, fuse_ino_t ino) {
         mmap(NULL, sizeof(T), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
     close(fd);
 
-    mknodat(context.get_root_fd(), std::format("{}/0", local_fname).c_str(),
+    mknodat(context.get_root_fd(), std::format("{}/data_0", local_fname).c_str(),
             S_IFREG | 0666, 0);
     return ino_obj;
 }
