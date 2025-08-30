@@ -53,3 +53,17 @@ std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> tgfs_dir::next(
     }
     return res;
 }
+
+int tgfs_dir::upload_data(tgfs_net_api *api, int n,
+                          const std::string &root_path) {
+    sync();
+    return tgfs_inode::upload_data(api, n, root_path);
+}
+
+int tgfs_dir::update_data(tgfs_net_api *api, int n,
+                          const std::string &root_path) {
+    close();
+    int err = tgfs_inode::update_data(api, n, root_path);
+    open(std::format("{}{}/data_0", root_path, attr.st_ino));
+    return err;
+}

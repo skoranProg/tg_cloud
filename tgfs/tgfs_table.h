@@ -17,6 +17,9 @@ class tgfs_db {
     ~tgfs_db();
 
     void sync();
+
+    void open(const std::string &path);
+    void close();
 };
 
 template <class K>

@@ -3,6 +3,10 @@
 #include <iostream>
 
 tgfs_db::tgfs_db(const std::string &path) {
+    open(path);
+}
+
+void tgfs_db::open(const std::string &path) {
     int err = sqlite3_open(path.c_str(), &table_);
     sqlite3_exec(table_, "PRAGMA mmap_size=268435456;", nullptr, nullptr,
                  nullptr);
@@ -14,8 +18,7 @@ tgfs_db::tgfs_db(const std::string &path) {
 
 tgfs_db::~tgfs_db() {
     sync();
-    std::cerr << "DB close() !!! " << table_ << std::endl;
-    sqlite3_close(table_);
+    close();
 }
 
 void tgfs_db::sync() {
@@ -28,4 +31,9 @@ void tgfs_db::sync() {
     std::cerr << "DB sync() !!!" /*<< "  " << err0 */ << "  "
               << err1 /*<< "  " << err2*/
               << std::endl;
+}
+
+void tgfs_db::close() {
+    std::cerr << "DB close() !!! " << table_ << std::endl;
+    sqlite3_close(table_);
 }

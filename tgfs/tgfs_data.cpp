@@ -16,9 +16,9 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       table_path_{std::format("{}message_table", root_path_)},
       max_filesize_{max_filesize},
       debug_{debug},
+      last_ino_{0},
       inodes_{},
-      messages_{table_path_},
-      last_ino_{0} {
+      messages_{table_path_} {
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
     new (root) tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
     root->init();

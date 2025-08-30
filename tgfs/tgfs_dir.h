@@ -20,6 +20,9 @@ class tgfs_dir : public tgfs_inode, public tgfs_table<std::string, fuse_ino_t> {
 
     int init();
 
+    int upload_data(tgfs_net_api *api, int n, const std::string &root_path);
+    int update_data(tgfs_net_api *api, int n, const std::string &root_path);
+
     std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> next(
         uint64_t off, int n) const;
 };
