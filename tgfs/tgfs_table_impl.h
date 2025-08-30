@@ -40,7 +40,7 @@ struct formatter<tgfs_sql_key<T>, char> : formatter<T, char> {
 template <IntOrStr K, std::integral V>
 int tgfs_table<K, V>::init() {
     char *err = nullptr;
-    std::cerr << "DB init() !!! " << table_ << std::endl;
+    std::clog << "DB init() !!! " << table_ << std::endl;
     sqlite3_exec(table_,
                  std::format("CREATE TABLE my_table ( "
                              "my_key {} PRIMARY KEY, "
@@ -49,8 +49,9 @@ int tgfs_table<K, V>::init() {
                              (std::is_integral<K>::value) ? "INTEGER" : "TEXT")
                      .c_str(),
                  nullptr, nullptr, &err);
+    std::clog << "\tcomplete!" << std::endl;
     if (err) {
-        std::cerr << err << std::endl;
+        std::clog << err << std::endl;
         sqlite3_free(err);
     }
     return 0;
@@ -60,20 +61,21 @@ template <IntOrStr K, std::integral V>
 V tgfs_table<K, V>::at(K key) {
     V res = 0;
     char *err = nullptr;
+    std::clog << "DB at() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
+              << std::endl;
     sqlite3_exec(
         table_,
-        std::format("SELECT my_value FROM my_table WHERE my_key = {};",
+        std::format("SELECT my_value FROM my_table WHERE my_key = {} LIMIT 1;",
                     tgfs_sql_key<K>{key})
             .c_str(),
         [](void *res, int n, char *values[], char *columns[]) {
             *reinterpret_cast<V *>(res) = *reinterpret_cast<V *>(values[0]);
-            return 1;
+            return 0;
         },
         &res, &err);
-    std::cerr << "DB at() !!!  "
-              << std::format("{} {}", tgfs_sql_key<K>{key}, res) << std::endl;
+    std::clog << "\tresult:  " << res << std::endl;
     if (err) {
-        std::cerr << err << std::endl;
+        std::clog << err << std::endl;
         sqlite3_free(err);
     }
     return res;
@@ -83,21 +85,21 @@ template <IntOrStr K, std::integral V>
 bool tgfs_table<K, V>::contains(K key) {
     bool res = false;
     char *err = nullptr;
+    std::clog << "DB contains() !!!  "
+              << std::format("{}", tgfs_sql_key<K>{key}) << std::endl;
     sqlite3_exec(
         table_,
-        std::format("SELECT my_key FROM my_table WHERE my_key = {};",
+        std::format("SELECT my_key FROM my_table WHERE my_key = {} LIMIT 1;",
                     tgfs_sql_key<K>{key})
             .c_str(),
         [](void *res, int n, char *values[], char *columns[]) {
             *reinterpret_cast<bool *>(res) = true;
-            return 1;
+            return 0;
         },
         &res, &err);
-    std::cerr << "DB contains() !!!  "
-              << std::format("{}", tgfs_sql_key<K>{key}) << ' '
-              << (res ? "true" : "false") << std::endl;
+    std::clog << "\tresult: " << (res ? "true" : "false") << std::endl;
     if (err) {
-        std::cerr << err << std::endl;
+        std::clog << err << std::endl;
         sqlite3_free(err);
     }
     return res;
@@ -106,6 +108,8 @@ bool tgfs_table<K, V>::contains(K key) {
 template <IntOrStr K, std::integral V>
 int tgfs_table<K, V>::set(K key, V value) {
     char *err = nullptr;
+    std::clog << "DB insert() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
+              << ' ' << value << std::endl;
     sqlite3_exec(
         table_,
         std::format(
@@ -114,10 +118,9 @@ int tgfs_table<K, V>::set(K key, V value) {
             tgfs_sql_key<K>{key}, value)
             .c_str(),
         nullptr, nullptr, &err);
-    std::cerr << "DB insert() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
-              << ' ' << value << std::endl;
+    std::clog << "\tinserted!" << std::endl;
     if (err) {
-        std::cerr << err << std::endl;
+        std::clog << err << std::endl;
         sqlite3_free(err);
     }
     return 0;
@@ -126,15 +129,16 @@ int tgfs_table<K, V>::set(K key, V value) {
 template <IntOrStr K, std::integral V>
 int tgfs_table<K, V>::remove(K key) {
     char *err = nullptr;
+    std::clog << "DB remove() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
+              << std::endl;
     sqlite3_exec(table_,
                  std::format("DELETE FROM my_table WHERE my_key = {};",
                              tgfs_sql_key<K>{key})
                      .c_str(),
                  nullptr, nullptr, &err);
-    std::cerr << "DB remove() !!!  " << std::format("{}", tgfs_sql_key<K>{key})
-              << std::endl;
+    std::clog << "\tremoved!" << std::endl;
     if (err) {
-        std::cerr << err << std::endl;
+        std::clog << err << std::endl;
         sqlite3_free(err);
     }
     return 0;
