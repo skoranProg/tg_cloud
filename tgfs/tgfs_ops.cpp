@@ -18,15 +18,28 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     }
 
     tgfs_dir *parent_dir = context->lookup_dir(parent);
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "\tparent_dir: %#x\n", parent_dir);
+    }
+
     if (!parent_dir->contains(name)) {
         fuse_reply_err(req, ENOENT);
         return;
     }
 
     fuse_ino_t ino = parent_dir->at(name);
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "\tino: %u\n", ino);
+    }
+
+    const tgfs_inode *ino_obj = context->lookup_inode(ino);
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "\tinode: %#x\n", ino_obj);
+    }
+
     struct fuse_entry_param e = {
         .ino = ino,
-        .attr = context->lookup_inode(ino)->attr,
+        .attr = ino_obj->attr,
         .attr_timeout = context->get_timeout(),
         .entry_timeout = context->get_timeout(),
     };
