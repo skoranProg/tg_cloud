@@ -508,9 +508,9 @@ TdClass create_td_client(int argc, char** argv, const char* database_dir) {
             return {};
         }
     }
-    auto [path, fd] = create_fd_path(database_dir);
-    TdClass td_client(std::stoi(argv[0]), argv[1], path);
-    td_client.SetFd(fd);
+    //auto [path, fd] = create_fd_path(database_dir);
+    TdClass td_client(std::stoi(argv[0]), argv[1], database_dir);
+    //td_client.SetFd(fd);
     td_client.Start();
     td_client.SetMainChatId("@tg_cloudfiles1bot");
     return td_client;
