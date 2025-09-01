@@ -20,6 +20,10 @@ class Encryption_Keys {
     Encryption_Keys() : key(AES::DEFAULT_KEYLENGTH), iv(AES::BLOCKSIZE * 16) {
     }
 
+    Encryption_Keys(const std::string &path) : key(AES::DEFAULT_KEYLENGTH), iv(AES::BLOCKSIZE * 16) {
+        LoadFromFile(path);
+    }
+
     int GenerateKeys();
 
     int LoadIntoFile(const std::string &path);
@@ -33,7 +37,7 @@ class Encryption_Keys {
     const int FILE_SIZE_ = AES::DEFAULT_KEYLENGTH + AES::BLOCKSIZE * 16;
 };
 
-class AES_file_encryptor : file_encryptor {
+class AES_file_encryptor : public file_encryptor {
  public:
     AES_file_encryptor(Encryption_Keys* keys) : keys_(keys) {
     }

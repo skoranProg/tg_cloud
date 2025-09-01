@@ -1,14 +1,20 @@
 #include "tgfs_api.h"
 #include "../encryption/encrypt_file.h"
-#include <stdio.h>
+#include <cstdio>
 
 int td_client_api::download(uint64_t msg, const std::string &path)  {
     auto fl = client_->DownloadFileFromMes(client_->GetMessage(client_->GetMainChatId(), msg));
-    int rename_res = rename(fl->local_->path_.c_str(),path.c_str());
+    std::string encrypted_path = path + ".aes";
+    int rename_res = rename(fl->local_->path_.c_str(), encrypted_path.c_str());
+    encryptor_->decrypt(encrypted_path, path);
+    if (!std::remove(encrypted_path.c_str())) {
+        std::cerr << "Cannot remove tmp .aes file: " << encrypted_path << std::endl;
+        return 1;
+    }
     if (!rename_res) {
         return rename_res;
     }
-    return encryptor_->encrypt(path, "");
+    return 0;
 }
 
 int td_client_api::remove(uint64_t msg)  {
@@ -17,9 +23,15 @@ int td_client_api::remove(uint64_t msg)  {
 }
 
 uint64_t td_client_api::upload(const std::string &path)  {
-    encryptor_->encrypt(path, "");
-    uint64_t result = client_->SendFile(client_->GetMainChatId(), path);
-    encryptor_->decrypt(path, "");
+    std::string encrypted_path = path + ".aes";
+    encryptor_->encrypt(path, encrypted_path);
+
+    uint64_t result = client_->SendFile(client_->GetMainChatId(), encrypted_path);
+    if (!std::remove(encrypted_path.c_str())) {
+        std::cerr << "Cannot remove tmp .aes file: " << encrypted_path << std::endl;
+
+        return 1;
+    }
     return result;
 }
 
