@@ -41,6 +41,8 @@ class tgfs_data {
 
     int get_root_fd() const;
 
+    const std::string &get_root_path() const;
+
     size_t get_max_filesize() const;
 
     uint64_t lookup_msg(fuse_ino_t ino);

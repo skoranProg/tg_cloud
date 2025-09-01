@@ -69,7 +69,7 @@ V tgfs_table<K, V>::at(K key) {
                     tgfs_sql_key<K>{key})
             .c_str(),
         [](void *res, int n, char *values[], char *columns[]) {
-            *reinterpret_cast<V *>(res) = *reinterpret_cast<V *>(values[0]);
+            *reinterpret_cast<V *>(res) = static_cast<V>(std::atoll(values[0]));
             return 0;
         },
         &res, &err);

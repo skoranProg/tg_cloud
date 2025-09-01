@@ -32,6 +32,10 @@ std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> tgfs_dir::next(
     std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> res;
     res.reserve(n);
     char *err;
+
+    std::clog << "tgfs_dir::next()\n\toff: " << off << "\n\tn: " << n
+              << std::endl;
+
     sqlite3_exec(
         table_,
         std::format("SELECT rowid, my_key, my_value FROM my_table WHERE rowid "
@@ -42,9 +46,11 @@ std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> tgfs_dir::next(
             reinterpret_cast<
                 std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> *>(
                 res)
-                ->emplace_back(*reinterpret_cast<uint64_t *>(columns[0]),
-                               std::string(columns[1]),
-                               *reinterpret_cast<fuse_ino_t *>(columns[2]));
+                ->emplace_back(static_cast<uint64_t>(std::atoll(values[0])),
+                               std::string(values[1]),
+                               static_cast<fuse_ino_t>(std::atoll(values[2])));
+            std::clog << "\tentry: " << (values[0]) << " " << values[1] << " "
+                      << (values[2]) << std::endl;
             return 0;
         },
         &res, &err);

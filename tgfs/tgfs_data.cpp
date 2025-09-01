@@ -12,7 +12,7 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
     : api_{api},
       timeout_{timeout},
       root_fd_{root_fd},
-      root_path_{std::format("/proc/self/fd/{}/", root_fd)},
+      root_path_{std::format("/home/skoran/test/test2/", root_fd)},
       table_path_{std::format("{}message_table", root_path_)},
       max_filesize_{max_filesize},
       debug_{debug},
@@ -28,6 +28,7 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
 }
 
 int tgfs_data::update_table() {
+    std::clog << "tgfs_data::update_table()" << std::endl;
     if (api_->is_up_to_date_table()) {
         return 0;
     }
@@ -59,16 +60,22 @@ int tgfs_data::get_root_fd() const {
     return root_fd_;
 }
 
+const std::string &tgfs_data::get_root_path() const {
+    return root_path_;
+}
+
 size_t tgfs_data::get_max_filesize() const {
     return max_filesize_;
 }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
+    std::clog << "tgfs_data::lookup_msg\n\tino: " << ino << std::endl;
     update_table();
     return messages_.at(ino);
 }
 
 tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
+    std::clog << "tgfs_data::lookup_inode\n\tino: " << ino << std::endl;
     if (!inodes_.contains(ino)) {
         if (update(ino)) {
             return nullptr;
