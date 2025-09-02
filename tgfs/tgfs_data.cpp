@@ -106,6 +106,7 @@ int tgfs_data::upload(fuse_ino_t ino) {
     tgfs_inode *ino_obj = lookup_inode(ino);
     ino_obj->upload_data(api_, 0, root_path_);
     uint64_t new_msg = api_->upload(std::format("{}{}/inode", root_path_, ino));
+    ino_obj->version = new_msg;
     if (msg != 0) {
         api_->remove(msg);
     }
@@ -138,6 +139,7 @@ int tgfs_data::update(fuse_ino_t ino) {
     }
     api_->download(msg, std::format("{}{}/inode", root_path_, ino));
     inodes_[ino] = map_inode<tgfs_inode>(*this, ino);
+    inodes_[ino]->version = msg;
     if (S_ISDIR(inodes_[ino]->attr.st_mode)) {
         munmap(inodes_[ino], sizeof(tgfs_dir));
         inodes_[ino] = map_inode<tgfs_dir>(*this, ino);

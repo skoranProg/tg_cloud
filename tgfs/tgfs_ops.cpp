@@ -22,12 +22,13 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
         fuse_log(FUSE_LOG_DEBUG, "\tparent_dir: %#x\n", parent_dir);
     }
 
-    if (!parent_dir->contains(name)) {
+    fuse_ino_t ino = parent_dir->at(name);
+
+    if (ino == 0) {
         fuse_reply_err(req, ENOENT);
         return;
     }
 
-    fuse_ino_t ino = parent_dir->at(name);
     if (context->is_debug()) {
         fuse_log(FUSE_LOG_DEBUG, "\tino: %u\n", ino);
     }
