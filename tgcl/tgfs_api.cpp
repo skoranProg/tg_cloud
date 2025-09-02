@@ -31,6 +31,7 @@ int td_client_api::download_table(const std::string &path) {
 int td_client_api::upload_table(const std::string &path) {
     uint64_t id_ = upload(path);
     client_->PinMessage(client_->GetMainChatId(), id_);
+    current_table_id_ = id_;
     return 0;
 }
 
