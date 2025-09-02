@@ -1,7 +1,6 @@
 #include "tgfs_dir.h"
 
-tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self,
-                   fuse_ino_t parent_dir)
+tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self)
     : tgfs_inode{(struct stat){.st_dev = 0,
                                .st_ino = self,
                                .st_nlink = 1,
@@ -9,7 +8,7 @@ tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self,
                                .st_uid = 0,
                                .st_gid = 0,
                                .st_rdev = 0,
-                               .st_size = 0,
+                               .st_size = 666,
                                .st_blksize = 0,
                                .st_blocks = 1,
                                .st_atim = {},
@@ -17,13 +16,12 @@ tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self,
                                .st_ctim = {}},
                  (uint64_t)0},
       tgfs_table<std::string, fuse_ino_t>{
-          std::format("{}{}/data_0", root_path, self)},
-      parent{parent_dir} {}
+          std::format("{}{}/data_0", root_path, self)} {}
 
-int tgfs_dir::init() {
+int tgfs_dir::init(fuse_ino_t parent_dir) {
     tgfs_table<std::string, fuse_ino_t>::init();
     set(".", attr.st_ino);
-    set("..", parent);
+    set("..", parent_dir);
     return 0;
 }
 

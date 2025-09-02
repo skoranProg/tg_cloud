@@ -13,12 +13,9 @@
 
 class tgfs_dir : public tgfs_inode, public tgfs_table<std::string, fuse_ino_t> {
  public:
-    fuse_ino_t parent;
+    tgfs_dir(const std::string &root_path, fuse_ino_t self);
 
-    tgfs_dir(const std::string &root_path, fuse_ino_t self,
-             fuse_ino_t parent_dir);
-
-    int init();
+    int init(fuse_ino_t parent_dir);
 
     int upload_data(tgfs_net_api *api, int n, const std::string &root_path);
     int update_data(tgfs_net_api *api, int n, const std::string &root_path);

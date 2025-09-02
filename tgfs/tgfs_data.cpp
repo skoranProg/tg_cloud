@@ -20,8 +20,11 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       inodes_{},
       messages_{table_path_} {
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
-    new (root) tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
-    root->init();
+    new (root) tgfs_dir(root_path_, FUSE_ROOT_ID);
+    root->init(FUSE_ROOT_ID);
+    clock_gettime(CLOCK_REALTIME, &(root->attr.st_atim));
+    root->attr.st_mtim = root->attr.st_atim;
+    root->attr.st_ctim = root->attr.st_atim;
     last_ino_ = FUSE_ROOT_ID;
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
     upload(FUSE_ROOT_ID);
