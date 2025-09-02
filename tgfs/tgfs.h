@@ -20,6 +20,6 @@ class tgfs_net_api {
     virtual int upload_table(const std::string &path) = 0;
 };
 
-int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api);
+int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api, const std::string& cache_dir);
 
 #endif

@@ -138,4 +138,4 @@ private:
     std::uint64_t NextQueryId();
 };
 
-TdClass create_td_client(int argc, char** argv, const char* database_dir);
+TdClass create_td_client(int argc, char** argv);

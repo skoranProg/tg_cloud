@@ -8,11 +8,11 @@
 #include "tgfs_helpers.h"
 
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
-                     size_t max_filesize, tgfs_net_api *api)
+                     size_t max_filesize, tgfs_net_api *api, const std::string& root_path)
     : api_{api},
       timeout_{timeout},
       root_fd_{root_fd},
-      root_path_{std::format("/home/skoran/test/test2/", root_fd)},
+      root_path_{root_path},
       table_path_{std::format("{}message_table", root_path_)},
       max_filesize_{max_filesize},
       debug_{debug},

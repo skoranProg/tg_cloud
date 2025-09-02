@@ -446,8 +446,8 @@ void TdClass::PinMessage(td_api::int53 chat_id, td_api::int53 message_id) {
     auto req = td_api::make_object<td_api::pinChatMessage>();
     req->message_id_ = message_id;
     req->chat_id_ = chat_id;
-    req->disable_notification_ = false;
-    req->only_for_self_ = false;
+    req->disable_notification_ = true;
+    req->only_for_self_ = true;
     bool wait = true;
     SendQuery(std::move(req),  [this, &wait](Object object) {
         wait = false;
@@ -465,7 +465,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(td_api::int53 c
     SendQuery(std::move(get_mes), [this, &result, &wait](Object object) {
         wait = false;
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem getting pinned message\n";
+            //std::cerr << "Problem getting pinned message\n";
             return;
         }
         result = td::move_tl_object_as<td_api::message>(object);
@@ -490,7 +490,7 @@ void TdClass::SetFd(int fd_) {
 }
 
 
-TdClass create_td_client(int argc, char** argv, const char* database_dir) {
+TdClass create_td_client(int argc, char** argv) {
     if (argc == 0) {
         return {};
         // Treat error
@@ -498,7 +498,7 @@ TdClass create_td_client(int argc, char** argv, const char* database_dir) {
     for (auto &s : stop_options) {
         if (strcmp(argv[0], s.c_str()) == 0) {
             if (strcmp(argv[0], "--help") == 0 || strcmp(argv[0], "-h") == 0 || strcmp(argv[0], "-hv") == 0) {
-                std::cout << "    -api_hash [api_hash]   api hash of telegram app\n    -api_id [api_id]       api id of telegram app\n";
+                std::cout << "    --cache_dir [path]     directory, where cache files can be stored\n    -api_hash [api_hash]   api hash of telegram app\n    -api_id [api_id]       api id of telegram app\n";
             }
             if (strcmp(argv[0], "--version") == 0 || strcmp(argv[0], "-v") == 0 || strcmp(argv[0], "-hv") == 0) {
                 // TODO
@@ -508,6 +508,12 @@ TdClass create_td_client(int argc, char** argv, const char* database_dir) {
             return {};
         }
     }
+    if (argc != 3) {
+        return {};
+        // Treat error
+    }
+    const char* database_dir = argv[2];
+
     //auto [path, fd] = create_fd_path(database_dir);
     TdClass td_client(std::stoi(argv[0]), argv[1], database_dir);
     //td_client.SetFd(fd);
