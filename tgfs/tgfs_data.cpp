@@ -8,7 +8,8 @@
 #include "tgfs_helpers.h"
 
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
-                     size_t max_filesize, tgfs_net_api *api, const std::string& root_path)
+                     size_t max_filesize, tgfs_net_api *api,
+                     const std::string &root_path)
     : api_{api},
       timeout_{timeout},
       root_fd_{root_fd},
@@ -20,7 +21,20 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       inodes_{},
       messages_{table_path_} {
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
-    new (root) tgfs_dir(root_path_, FUSE_ROOT_ID);
+    new (root) tgfs_dir(root_path_, FUSE_ROOT_ID,
+                        {.st_dev = 0,
+                         .st_ino = FUSE_ROOT_ID,
+                         .st_nlink = 1,
+                         .st_mode = S_IFDIR | S_IRWXU,
+                         .st_uid = geteuid(),
+                         .st_gid = getegid(),
+                         .st_rdev = 0,
+                         .st_size = 666,
+                         .st_blksize = 0,
+                         .st_blocks = 1,
+                         .st_atim = {},
+                         .st_mtim = {},
+                         .st_ctim = {}});
     root->init(FUSE_ROOT_ID);
     clock_gettime(CLOCK_REALTIME, &(root->attr.st_atim));
     root->attr.st_mtim = root->attr.st_atim;
@@ -105,7 +119,8 @@ int tgfs_data::upload(fuse_ino_t ino) {
     uint64_t msg = lookup_msg(ino);
     tgfs_inode *ino_obj = lookup_inode(ino);
     ino_obj->upload_data(api_, 0, root_path_);
-    uint64_t new_msg = api_->upload(std::format("{}/{}/inode", root_path_, ino));
+    uint64_t new_msg =
+        api_->upload(std::format("{}/{}/inode", root_path_, ino));
     ino_obj->version = new_msg;
     if (msg != 0) {
         api_->remove(msg);

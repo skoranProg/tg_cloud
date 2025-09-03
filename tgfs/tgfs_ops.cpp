@@ -84,8 +84,8 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
                 .st_ino = ino,
                 .st_nlink = 1,
                 .st_mode = mode,
-                .st_uid = 0,
-                .st_gid = 0,
+                .st_uid = geteuid(),
+                .st_gid = getegid(),
                 .st_rdev = 0,
                 .st_size = 0,
                 .st_blksize = 0,
@@ -100,7 +100,71 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     clock_gettime(CLOCK_REALTIME, &(e.attr.st_atim));
     e.attr.st_mtim = e.attr.st_atim;
     e.attr.st_ctim = e.attr.st_atim;
+
     new (ino_obj) tgfs_inode(e.attr, (uint64_t)0);
+
+    if (context->upload(ino_obj) != 0) {
+        // TODO : handle exception
+    }
+    parent_dir->set(name, ino);
+    if (context->upload(parent) != 0) {
+        // TODO : handle exception
+    }
+
+    fuse_reply_entry(req, &e);
+}
+
+void tgfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
+                mode_t mode) {
+    tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "Func: mkdir\n\tparent: %u\n\tname:%s\n",
+                 parent, name);
+    }
+
+    tgfs_dir *parent_dir = context->lookup_dir(parent);
+    if (parent_dir->contains(name)) {
+        fuse_reply_err(req, EEXIST);
+        return;
+    }
+
+    fuse_ino_t ino = context->new_ino();
+
+    tgfs_dir *ino_obj = make_new_files<tgfs_dir>(*context, ino);
+
+    if (ino_obj == nullptr) {
+        fuse_reply_err(req, errno);
+        return;
+    }
+
+    struct fuse_entry_param e = {
+        .ino = ino,
+        .attr =
+            {
+                .st_dev = 0,
+                .st_ino = ino,
+                .st_nlink = 1,
+                .st_mode = mode,
+                .st_uid = geteuid(),
+                .st_gid = getegid(),
+                .st_rdev = 0,
+                .st_size = 666,
+                .st_blksize = 0,
+                .st_blocks = 1,
+                .st_atim = {},
+                .st_mtim = {},
+                .st_ctim = {},
+            },
+        .attr_timeout = context->get_timeout(),
+        .entry_timeout = context->get_timeout(),
+    };
+    clock_gettime(CLOCK_REALTIME, &(e.attr.st_atim));
+    e.attr.st_mtim = e.attr.st_atim;
+    e.attr.st_ctim = e.attr.st_atim;
+
+    new (ino_obj) tgfs_dir(context->get_root_path(), ino, e.attr);
+    ino_obj->init(parent);
 
     if (context->upload(ino_obj) != 0) {
         // TODO : handle exception
@@ -344,6 +408,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .getattr = tgfs_getattr,
     .setattr = tgfs_setattr,
     .mknod = tgfs_mknod,
+    .mkdir = tgfs_mkdir,
     .open = tgfs_open,
     .read = tgfs_read,
     .flush = tgfs_flush,
