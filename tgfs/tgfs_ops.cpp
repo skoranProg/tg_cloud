@@ -161,7 +161,7 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     int fd =
-        open(std::format("{}{}/data_0", context->get_root_path(), ino).c_str(),
+        open(std::format("{}/{}/data_0", context->get_root_path(), ino).c_str(),
              fi->flags & (~O_TRUNC));
     if (fd == -1) {
         fuse_reply_err(req, errno);

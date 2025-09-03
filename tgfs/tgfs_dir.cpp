@@ -16,7 +16,7 @@ tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self)
                                .st_ctim = {}},
                  (uint64_t)0},
       tgfs_table<std::string, fuse_ino_t>{
-          std::format("{}{}/data_0", root_path, self)} {}
+          std::format("{}/{}/data_0", root_path, self)} {}
 
 int tgfs_dir::init(fuse_ino_t parent_dir) {
     tgfs_table<std::string, fuse_ino_t>::init();
@@ -68,6 +68,6 @@ int tgfs_dir::update_data(tgfs_net_api *api, int n,
                           const std::string &root_path) {
     close();
     int err = tgfs_inode::update_data(api, n, root_path);
-    open(std::format("{}{}/data_0", root_path, attr.st_ino));
+    open(std::format("{}/{}/data_0", root_path, attr.st_ino));
     return err;
 }
