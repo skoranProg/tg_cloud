@@ -8,10 +8,6 @@ tgfs_db::tgfs_db(const std::string &path) {
 
 void tgfs_db::open(const std::string &path) {
     int err = sqlite3_open(path.c_str(), &table_);
-    sqlite3_exec(table_, "PRAGMA mmap_size=268435456;", nullptr, nullptr,
-                 nullptr);
-    // sqlite3_exec(table_, "PRAGMA synchronous=FULL;", nullptr, nullptr,
-    // nullptr);
     std::cerr << "DB open() !!! " << err << "  " << table_ << " " << path
               << std::endl;
 }

@@ -19,7 +19,7 @@ void tgfs_help() {
            "    -o max_filesize=1024   Maximal size of one file(in Mb)\n");
 }
 
-int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api) {
+int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api, const std::string& cache_dir) {
     int err = 0;
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
     struct fuse_cmdline_opts opts;
@@ -82,7 +82,7 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api) {
     }
 
     tgfs_data *context = new tgfs_data(opts.debug, custom_opts.timeout, root_fd,
-                                       custom_opts.max_filesize, api);
+                                       custom_opts.max_filesize, api, cache_dir);
 
     struct fuse_session *se =
         fuse_session_new(&args, &tgfs_opers, sizeof(tgfs_opers), context);

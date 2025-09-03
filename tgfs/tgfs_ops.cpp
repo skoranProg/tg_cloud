@@ -22,12 +22,13 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
         fuse_log(FUSE_LOG_DEBUG, "\tparent_dir: %#x\n", parent_dir);
     }
 
-    if (!parent_dir->contains(name)) {
+    fuse_ino_t ino = parent_dir->at(name);
+
+    if (ino == 0) {
         fuse_reply_err(req, ENOENT);
         return;
     }
 
-    fuse_ino_t ino = parent_dir->at(name);
     if (context->is_debug()) {
         fuse_log(FUSE_LOG_DEBUG, "\tino: %u\n", ino);
     }
@@ -159,8 +160,9 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
     tgfs_inode *ino_obj = context->lookup_inode(ino);
-    int fd = openat(context->get_root_fd(), std::format("{}/0", ino).c_str(),
-                    fi->flags & (~O_TRUNC));
+    int fd =
+        open(std::format("{}/{}/data_0", context->get_root_path(), ino).c_str(),
+             fi->flags & (~O_TRUNC));
     if (fd == -1) {
         fuse_reply_err(req, errno);
         return;
@@ -169,7 +171,7 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     fi->direct_io = 1;
 
     if (fi->flags & O_TRUNC) {
-        ftruncate(fd, sizeof(tgfs_inode));
+        ftruncate(fd, 0);
         ino_obj->attr.st_size = 0;
     }
 

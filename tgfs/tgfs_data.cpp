@@ -8,26 +8,30 @@
 #include "tgfs_helpers.h"
 
 tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
-                     size_t max_filesize, tgfs_net_api *api)
+                     size_t max_filesize, tgfs_net_api *api, const std::string& root_path)
     : api_{api},
       timeout_{timeout},
       root_fd_{root_fd},
-      root_path_{std::format("/proc/self/fd/{}/", root_fd)},
-      table_path_{std::format("{}message_table", root_path_)},
+      root_path_{root_path},
+      table_path_{std::format("{}/message_table", root_path_)},
       max_filesize_{max_filesize},
       debug_{debug},
       last_ino_{0},
       inodes_{},
       messages_{table_path_} {
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
-    new (root) tgfs_dir(root_path_, FUSE_ROOT_ID, FUSE_ROOT_ID);
-    root->init();
+    new (root) tgfs_dir(root_path_, FUSE_ROOT_ID);
+    root->init(FUSE_ROOT_ID);
+    clock_gettime(CLOCK_REALTIME, &(root->attr.st_atim));
+    root->attr.st_mtim = root->attr.st_atim;
+    root->attr.st_ctim = root->attr.st_atim;
     last_ino_ = FUSE_ROOT_ID;
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
     upload(FUSE_ROOT_ID);
 }
 
 int tgfs_data::update_table() {
+    std::clog << "tgfs_data::update_table()" << std::endl;
     if (api_->is_up_to_date_table()) {
         return 0;
     }
@@ -59,16 +63,22 @@ int tgfs_data::get_root_fd() const {
     return root_fd_;
 }
 
+const std::string &tgfs_data::get_root_path() const {
+    return root_path_;
+}
+
 size_t tgfs_data::get_max_filesize() const {
     return max_filesize_;
 }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
+    std::clog << "tgfs_data::lookup_msg\n\tino: " << ino << std::endl;
     update_table();
     return messages_.at(ino);
 }
 
 tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
+    std::clog << "tgfs_data::lookup_inode\n\tino: " << ino << std::endl;
     if (!inodes_.contains(ino)) {
         if (update(ino)) {
             return nullptr;
@@ -95,7 +105,8 @@ int tgfs_data::upload(fuse_ino_t ino) {
     uint64_t msg = lookup_msg(ino);
     tgfs_inode *ino_obj = lookup_inode(ino);
     ino_obj->upload_data(api_, 0, root_path_);
-    uint64_t new_msg = api_->upload(std::format("{}{}/inode", root_path_, ino));
+    uint64_t new_msg = api_->upload(std::format("{}/{}/inode", root_path_, ino));
+    ino_obj->version = new_msg;
     if (msg != 0) {
         api_->remove(msg);
     }
@@ -126,8 +137,9 @@ int tgfs_data::update(fuse_ino_t ino) {
         }
         inodes_.erase(ino);
     }
-    api_->download(msg, std::format("{}{}/inode", root_path_, ino));
+    api_->download(msg, std::format("{}/{}/inode", root_path_, ino));
     inodes_[ino] = map_inode<tgfs_inode>(*this, ino);
+    inodes_[ino]->version = msg;
     if (S_ISDIR(inodes_[ino]->attr.st_mode)) {
         munmap(inodes_[ino], sizeof(tgfs_dir));
         inodes_[ino] = map_inode<tgfs_dir>(*this, ino);
