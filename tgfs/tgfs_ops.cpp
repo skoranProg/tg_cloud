@@ -171,7 +171,7 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     fi->direct_io = 1;
 
     if (fi->flags & O_TRUNC) {
-        ftruncate(fd, sizeof(tgfs_inode));
+        ftruncate(fd, 0);
         ino_obj->attr.st_size = 0;
     }
 

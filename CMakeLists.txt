@@ -30,6 +30,7 @@ add_subdirectory(td)
 target_link_libraries(tg_cloud PRIVATE Td::TdStatic)
 
 add_subdirectory(SQLiteCpp)
+target_compile_options(SQLiteCpp PUBLIC -DSQLITE_DEFAULT_MMAP_SIZE=268435456 PUBLIC -DSQLITE_DEFAULT_PAGE_SIZE=1024)
 target_link_libraries(tg_cloud PRIVATE SQLiteCpp)
 
 target_link_libraries(tg_cloud PRIVATE -lfuse3 -lpthread)
