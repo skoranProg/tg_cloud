@@ -49,7 +49,7 @@ public:
 
     /* Method that sends file, located at path, in chat with chat_id*/
 
-    td_api::int53 SendFile(td_api::int53 chat_id, const std::string& path);
+    td_api::int53 SendFile(td_api::int53 chat_id, const std::string& path, int* back_file_id = nullptr);
 
     /* Method to get chat_id from personal chat with @username*/
 
@@ -78,6 +78,8 @@ public:
     /* DownloadFile, knowing message ID */
 
     td::tl_object_ptr<td_api::file> DownloadFileFromMes(td::tl_object_ptr<td_api::message> mes);
+
+    void DeleteFile(int file_id);
 
     void SetFd(int fd_);
 

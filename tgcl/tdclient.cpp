@@ -178,7 +178,7 @@ td::tl_object_ptr<td_api::file> TdClass::DownloadFileFromMes(td::tl_object_ptr<t
     return DownloadFile(fl->document_->document_->id_);
 }
 
-td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) {
+td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path, int* back_file_id) {
     auto send_message = td_api::make_object<td_api::sendMessage>();
     send_message->chat_id_ = chat_id;
     auto local_file = td_api::make_object<td_api::inputFileLocal>();
@@ -186,11 +186,12 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
     auto message_file = td_api::make_object<td_api::inputMessageDocument>();
     message_file->document_ = std::move(local_file);
     send_message->input_message_content_ = std::move(message_file);
-    int64_t file_id = -1;
+    int file_id = -1;
+    int back_fi = -1;
     td::tl_object_ptr<td_api::file> result = nullptr;
     bool wait = true;
     td_api::int53 result_mes_id = -1;
-    SendQuery(std::move(send_message), [this, &wait, &file_id, &result_mes_id](Object object) {
+    SendQuery(std::move(send_message), [this, &wait, &file_id, &result_mes_id, &back_fi](Object object) {
         if (object->get_id() == td_api::error::ID) {
             std::cerr << "Problem while sending file\n" << to_string(object) << std::endl;
             return;
@@ -214,6 +215,9 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path) 
     }
     while (!sent_message_[result_mes_id]) {
         ProcessResponse(client_manager_->receive(0));;
+    }
+    if (back_file_id) {
+        *back_file_id = file_id;
     }
     return sent_message_[result_mes_id];
 }
@@ -249,6 +253,24 @@ void TdClass::DeleteMessage(td_api::int53 chat_id, td_api::int53 message_id) {
             wait = false;
             return;
         }
+        wait = false;
+    });
+    while (wait) {
+        ProcessResponse(client_manager_->receive(0));
+    };
+}
+
+void TdClass::DeleteFile(int file_id) {
+    auto del_mes = td_api::make_object<td_api::deleteFile>();
+    del_mes->file_id_ = file_id;
+    bool wait = true;
+    SendQuery(std::move(del_mes), [this, &wait](Object object) {
+        if (object->get_id() == td_api::error::ID) {
+            std::cerr << "Problem Deleting file from cache:\n" << to_string(object) << std::endl;
+            wait = false;
+            return;
+        }
+
         wait = false;
     });
     while (wait) {
