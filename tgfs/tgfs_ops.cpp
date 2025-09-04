@@ -142,6 +142,36 @@ void tgfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
     }
 }
 
+void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
+               const char *newname) {
+    tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG,
+                 "Func: link\n\tinode: %u\n\tdir: %u\n\tname: %s\n", ino,
+                 newparent, newname);
+    }
+
+    tgfs_dir *dir = context->lookup_dir(newparent);
+    if (dir->contains(newname)) {
+        fuse_reply_err(req, EEXIST);
+        return;
+    }
+    dir->set(newname, ino);
+
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
+    ino_obj->attr.st_nlink++;
+
+    struct fuse_entry_param e = {
+        .ino = ino,
+        .attr = ino_obj->attr,
+        .attr_timeout = context->get_timeout(),
+        .entry_timeout = context->get_timeout(),
+    };
+
+    fuse_reply_entry(req, &e);
+}
+
 void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                   struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
@@ -374,6 +404,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .setattr = tgfs_setattr,
     .mknod = tgfs_mknod,
     .mkdir = tgfs_mkdir,
+    .link = tgfs_link,
     .open = tgfs_open,
     .read = tgfs_read,
     .flush = tgfs_flush,
