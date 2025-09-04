@@ -83,6 +83,8 @@ public:
 
     void SetFd(int fd_);
 
+    std::string GetDatabaseDir() const;
+
 private:
 
     class FD {

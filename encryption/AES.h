@@ -21,7 +21,12 @@ class Encryption_Keys {
     }
 
     Encryption_Keys(const std::string &path) : key(AES::DEFAULT_KEYLENGTH), iv(AES::BLOCKSIZE * 16) {
-        LoadFromFile(path);
+        if (path == "") {
+            GenerateKeys();
+            LoadIntoFile("./tg_cloud.key");
+        } else {
+            LoadFromFile(path);
+        }
     }
 
     int GenerateKeys();

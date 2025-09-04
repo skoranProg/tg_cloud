@@ -44,7 +44,7 @@ int AES_file_encryptor::decrypt(const std::string &path, const std::string &outp
     }
     catch( CryptoPP::Exception& e )
     {
-        std::cerr << e.what() << std::endl;
+        //std::cerr <<e.what() << std::endl;
         return 1;
     }
     return 0;

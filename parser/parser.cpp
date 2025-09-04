@@ -10,6 +10,12 @@ void Parser::parse() {
             tgcl_argv_.push_back(*find_option(s));
         }
     }
+    char** key = find_option("--key", true);
+    if (!key) {
+        std::cout << "No key provided, it'll generated in working directory" << std::endl;
+    } else {
+        key_path_ = *(key + 1);
+    }
     char** cache_dir = find_option("--cache_dir", true);
     if (!cache_dir) {
         std::cerr << "No cache directory provided" << std::endl;
@@ -56,4 +62,11 @@ char** Parser::find_option(const std::string& option, bool not_last) {
 
 std::string Parser::get_cache_dir() const {
     return cache_dir_;
+}
+
+std::string Parser::get_key_path() const {
+    if (key_path_) {
+        return key_path_;
+    }
+    return "";
 }

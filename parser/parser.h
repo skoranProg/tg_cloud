@@ -22,6 +22,8 @@ public:
     options get_tgcl_options();
 
     std::string get_cache_dir() const;
+
+    std::string get_key_path() const;
 private:
 
     char** find_option(const std::string& option, bool not_last = false);
@@ -31,7 +33,8 @@ private:
     int argc_;
     char **argv_;
     std::vector<char*> tgfs_argv_, tgcl_argv_;
-    char* cache_dir_;
+    char* cache_dir_ = nullptr;
+    char* key_path_ = nullptr;
 };
 
 const std::vector<std::string> stop_options = {"--help", "--version", "-h", "-v", "-hv"};

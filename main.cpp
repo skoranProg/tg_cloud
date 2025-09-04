@@ -18,7 +18,7 @@
 int main(int argc, char *argv[]) {
     Parser parser(argc, argv);
     TdClass td_client = create_td_client(parser.get_tgcl_options().argc, parser.get_tgcl_options().argv);
-    Encryption_Keys keys("/fs_test/bro.key");
+    Encryption_Keys keys(parser.get_key_path());
     AES_file_encryptor encryptor(&keys);
     td_client_api td_api(&td_client, &encryptor);
     return make_new_tgfs(parser.get_tgfs_options().argc, parser.get_tgfs_options().argv, &td_api, parser.get_cache_dir());

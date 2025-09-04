@@ -511,6 +511,9 @@ void TdClass::SetFd(int fd_) {
     database_fd_.fd = fd_;
 }
 
+std::string TdClass::GetDatabaseDir() const {
+    return database_directory_;
+}
 
 TdClass create_td_client(int argc, char** argv) {
     if (argc == 0) {

@@ -6,8 +6,7 @@
 
 class td_client_api : public tgfs_net_api {
 public:
-    td_client_api(TdClass* client_, file_encryptor* encryptor_) : client_(client_), encryptor_(encryptor_) {
-    }
+    td_client_api(TdClass* client_, file_encryptor* encryptor_);
 
     uint64_t upload(const std::string &path) override;
     int download(uint64_t msg, const std::string &path) override;

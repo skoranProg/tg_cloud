@@ -3,16 +3,23 @@
 #include <cstdio>
 #include <filesystem>
 
+td_client_api::td_client_api(TdClass *client_, file_encryptor *encryptor_) : client_(client_), encryptor_(encryptor_) {
+    std::string path = client_->GetDatabaseDir() + "/" + "a";
+    if (download_table(path) == 3) {
+        std::filesystem::remove(path);
+        std::cout << "Incorrect key" << std::endl;
+        exit(0);
+    }
+    std::filesystem::remove(path);
+}
+
 int td_client_api::download(uint64_t msg, const std::string &path)  {
     auto fl = client_->DownloadFileFromMes(client_->GetMessage(client_->GetMainChatId(), msg));
     std::string encrypted_path = path + ".aes";
     int rename_res = rename(fl->local_->path_.c_str(), encrypted_path.c_str());
-    encryptor_->decrypt(encrypted_path, path);
+    int res = encryptor_->decrypt(encrypted_path, path);
     std::filesystem::remove(encrypted_path);
-    if (!rename_res) {
-        return rename_res;
-    }
-    return 0;
+    return res;
 }
 
 int td_client_api::remove(uint64_t msg)  {
@@ -39,7 +46,10 @@ int td_client_api::download_table(const std::string &path) {
         return 2;
     }
     current_table_id_ = pinned->id_;
-    download(current_table_id_, path);
+    int res = download(current_table_id_, path);
+    if (download(current_table_id_, path)) {
+        return 3;
+    }
     return 0;
 };
 
