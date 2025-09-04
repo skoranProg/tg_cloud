@@ -163,7 +163,7 @@ void tgfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
     e.attr.st_mtim = e.attr.st_atim;
     e.attr.st_ctim = e.attr.st_atim;
 
-    new (ino_obj) tgfs_dir(context->get_root_path(), ino, e.attr);
+    new (ino_obj) tgfs_dir(context->get_root_path(), e.attr);
     ino_obj->init(parent);
 
     if (context->upload(ino_obj) != 0) {

@@ -2,11 +2,10 @@
 
 #include <unistd.h>
 
-tgfs_dir::tgfs_dir(const std::string &root_path, fuse_ino_t self,
-                   struct stat attrs)
+tgfs_dir::tgfs_dir(const std::string &root_path, struct stat attrs)
     : tgfs_inode{attrs, (uint64_t)0},
       tgfs_table<std::string, fuse_ino_t>{
-          std::format("{}/{}/data_0", root_path, self)} {}
+          std::format("{}/{}/data_0", root_path, attrs.st_ino)} {}
 
 int tgfs_dir::init(fuse_ino_t parent_dir) {
     tgfs_table<std::string, fuse_ino_t>::init();
