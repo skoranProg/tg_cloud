@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -21,8 +22,8 @@ namespace td_api = td::td_api;
 class TdClass {
 public:
 
-    TdClass(std::int32_t api_id, std::string api_hash) : api_id_(api_id), api_hash_(std::move(api_hash)) {
-        td::ClientManager::execute(td_api::make_object<td_api::setLogVerbosityLevel>(1));
+    TdClass(std::int32_t api_id, const std::string &api_hash, const std::string &database_directory) : api_id_(api_id), api_hash_(api_hash), database_directory_(database_directory) {
+        td::ClientManager::execute(td_api::make_object<td_api::setLogVerbosityLevel>(0));
         client_manager_ = std::make_unique<td::ClientManager>();
         client_id_ = client_manager_->create_client_id();
         SendQuery(td_api::make_object<td_api::getOption>("version"), {});
@@ -78,7 +79,26 @@ public:
 
     td::tl_object_ptr<td_api::file> DownloadFileFromMes(td::tl_object_ptr<td_api::message> mes);
 
+    void SetFd(int fd_);
+
 private:
+
+    class FD {
+        public:
+            FD() : fd(-1) {}
+
+            FD(int fd) : fd(fd) {}
+
+            ~FD() {
+                if (fd >= 0) {
+                    close(fd);
+                }
+            }
+
+            int fd;
+
+    };
+
     using Object = td_api::object_ptr<td_api::Object>;
     std::unique_ptr<td::ClientManager> client_manager_;
     std::int32_t client_id_{0};
@@ -88,6 +108,7 @@ private:
     bool need_restart_{false};
     std::int32_t api_id_{0};
     std::string api_hash_;
+    std::string database_directory_;
     std::uint64_t current_query_id_{0};
     std::uint64_t authentication_query_id_{0};
     bool are_alive_{true};
@@ -98,6 +119,7 @@ private:
     std::unordered_map<std::int64_t, int> completed_downloads_;
     std::unordered_map<std::int64_t, td_api::int53> sent_message_;
 
+    FD database_fd_; // database_dir fd
 
     void Restart();
 

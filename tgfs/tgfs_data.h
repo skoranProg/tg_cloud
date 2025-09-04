@@ -1,15 +1,14 @@
 #ifndef _TGFS_DATA_H_
 #define _TGFS_DATA_H_
 
-#include "tgfs_fuse_dependencies.h"
-
 #include "tgfs.h"
 #include "tgfs_dir.h"
+#include "tgfs_fuse_dependencies.h"
 #include "tgfs_inode.h"
 #include "tgfs_table.h"
 
 class tgfs_data {
-  private:
+ private:
     tgfs_net_api *api_;
     double timeout_;
     const int root_fd_;
@@ -17,21 +16,22 @@ class tgfs_data {
     const std::string table_path_;
     const size_t max_filesize_;
     bool debug_;
+    fuse_ino_t last_ino_;
 
     // Only physically present(downloaded) files
     // May contain outdated information
-    std::unordered_map<fuse_ino_t, tgfs_inode *> inodes_; // ino -> inode
+    std::unordered_map<fuse_ino_t, tgfs_inode *> inodes_;  // ino -> inode
 
     // All files on server
     // Must always be up-to-date(which means sync of whole table before each
     // call)
-    tgfs_table<fuse_ino_t, uint64_t> messages_; // ino -> msg_id
+    tgfs_table<fuse_ino_t, uint64_t> messages_;  // ino -> msg_id
 
     int update_table();
 
-  public:
+ public:
     tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
-              tgfs_net_api *api);
+              tgfs_net_api *api, const std::string& root_path);
 
     static tgfs_data *tgfs_ptr(fuse_req_t req);
 
@@ -40,6 +40,8 @@ class tgfs_data {
     double get_timeout() const;
 
     int get_root_fd() const;
+
+    const std::string &get_root_path() const;
 
     size_t get_max_filesize() const;
 
@@ -53,6 +55,8 @@ class tgfs_data {
     int upload(tgfs_inode *ino);
 
     int update(fuse_ino_t ino);
+
+    fuse_ino_t new_ino();
 };
 
 #endif

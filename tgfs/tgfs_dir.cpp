@@ -1,56 +1,62 @@
 #include "tgfs_dir.h"
 
-tgfs_dir::tgfs_dir(fuse_ino_t self, fuse_ino_t parent)
-    : tgfs_inode{(struct stat){.st_dev = 0,
-                               .st_ino = self,
-                               .st_nlink = 1,
-                               .st_mode = S_IFDIR | S_IRWXU,
-                               .st_uid = 0,
-                               .st_gid = 0,
-                               .st_rdev = 0,
-                               .st_size = 0,
-                               .st_blksize = 0,
-                               .st_blocks = 1,
-                               .st_atim = {},
-                               .st_mtim = {},
-                               .st_ctim = {}},
-                 (uint64_t)0},
-      ftable{}, rev_ftable{} {
-    ftable.emplace("..", parent);
-    rev_ftable.emplace(parent, "..");
-}
+#include <unistd.h>
 
-bool tgfs_dir::contains(const std::string &name) {
-    return ftable.contains(name);
-}
+tgfs_dir::tgfs_dir(const std::string &root_path, struct stat attrs)
+    : tgfs_inode{attrs, (uint64_t)0},
+      tgfs_table<std::string, fuse_ino_t>{
+          std::format("{}/{}/data_0", root_path, attrs.st_ino)} {}
 
-bool tgfs_dir::contains(fuse_ino_t ino) {
-    return (*rev_ftable.lower_bound(std::make_pair(ino, ""))).first == ino;
-}
-
-int tgfs_dir::add(const std::string &name, fuse_ino_t ino) {
-    if (contains(name)) {
-        return -1;
-    }
-    ftable.emplace(name, ino);
-    rev_ftable.emplace(ino, name);
+int tgfs_dir::init(fuse_ino_t parent_dir) {
+    tgfs_table<std::string, fuse_ino_t>::init();
+    set(".", attr.st_ino);
+    set("..", parent_dir);
     return 0;
 }
 
-fuse_ino_t tgfs_dir::lookup(const std::string &name) {
-    if (!contains(name)) {
-        return 0;
+std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> tgfs_dir::next(
+    uint64_t off, int n) const {
+    std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> res;
+    res.reserve(n);
+    char *err;
+
+    std::clog << "tgfs_dir::next()\n\toff: " << off << "\n\tn: " << n
+              << std::endl;
+
+    sqlite3_exec(
+        table_,
+        std::format("SELECT rowid, my_key, my_value FROM my_table WHERE rowid "
+                    "> {} LIMIT {};",
+                    off, n)
+            .c_str(),
+        [](void *res, int n, char *values[], char *columns[]) {
+            reinterpret_cast<
+                std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> *>(
+                res)
+                ->emplace_back(static_cast<uint64_t>(std::atoll(values[0])),
+                               std::string(values[1]),
+                               static_cast<fuse_ino_t>(std::atoll(values[2])));
+            std::clog << "\tentry: " << (values[0]) << " " << values[1] << " "
+                      << (values[2]) << std::endl;
+            return 0;
+        },
+        &res, &err);
+    if (err) {
+        sqlite3_free(err);
     }
-    return ftable.at(name);
+    return res;
 }
 
-const std::pair<fuse_ino_t, std::string> *tgfs_dir::next(fuse_ino_t ino) const {
-    if (ino + 1 <= 0) {
-        return nullptr;
-    }
-    auto ub_iter = rev_ftable.lower_bound(std::make_pair(ino + 1, ""));
-    if (ub_iter == rev_ftable.end()) {
-        return nullptr;
-    }
-    return &(*ub_iter);
+int tgfs_dir::upload_data(tgfs_net_api *api, int n,
+                          const std::string &root_path) {
+    sync();
+    return tgfs_inode::upload_data(api, n, root_path);
+}
+
+int tgfs_dir::update_data(tgfs_net_api *api, int n,
+                          const std::string &root_path) {
+    close();
+    int err = tgfs_inode::update_data(api, n, root_path);
+    open(std::format("{}/{}/data_0", root_path, attr.st_ino));
+    return err;
 }

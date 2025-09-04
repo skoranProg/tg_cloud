@@ -14,7 +14,6 @@ add_executable(tg_cloud
         tgfs/tgfs_ops.cpp
         tgfs/tgfs_data.cpp
         tgfs/tgfs_dir.cpp
-        tgfs/tgfs_helpers.cpp
         tgfs/tgfs_inode.cpp
         tgfs/tgfs_table.cpp
         parser/parser.cpp
@@ -31,6 +30,7 @@ add_subdirectory(td)
 target_link_libraries(tg_cloud PRIVATE Td::TdStatic)
 
 add_subdirectory(SQLiteCpp)
+target_compile_options(SQLiteCpp PUBLIC -DSQLITE_DEFAULT_MMAP_SIZE=268435456 PUBLIC -DSQLITE_DEFAULT_PAGE_SIZE=1024)
 target_link_libraries(tg_cloud PRIVATE SQLiteCpp)
 
 target_link_libraries(tg_cloud PRIVATE -lfuse3 -lpthread)

@@ -16,17 +16,33 @@ uint64_t td_client_api::upload(const std::string &path)  {
 }
 
 int td_client_api::download_table(const std::string &path) {
-    current_table_id_ = client_->GetLastPinnedMessage(client_->GetMainChatId())->id_;
+    auto pinned = client_->GetLastPinnedMessage(client_->GetMainChatId());
+    if (is_up_to_date_table()) {
+        return 1;
+    }
+    if (pinned == nullptr) {
+        return 2;
+    }
+    current_table_id_ = pinned->id_;
     download(current_table_id_, path);
     return 0;
 };
 
 int td_client_api::upload_table(const std::string &path) {
     uint64_t id_ = upload(path);
+    auto pinned = client_->GetLastPinnedMessage(client_->GetMainChatId());
+    if (pinned) {
+        remove(pinned->id_);
+    }
     client_->PinMessage(client_->GetMainChatId(), id_);
+    current_table_id_ = id_;
     return 0;
 }
 
 bool td_client_api::is_up_to_date_table() {
-    return client_->GetLastPinnedMessage(client_->GetMainChatId())->id_ == current_table_id_;
+    auto pinned = client_->GetLastPinnedMessage(client_->GetMainChatId());
+    if (pinned == nullptr) {
+        return false;
+    }
+    return pinned->id_ == current_table_id_;
 }
