@@ -120,11 +120,7 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 int tgfs_data::upload(fuse_ino_t ino) {
     uint64_t msg = lookup_msg(ino);
     tgfs_inode *ino_obj = lookup_inode(ino);
-    if (S_ISDIR(ino_obj->attr->st_mode)) {
-        reinterpret_cast<tgfs_dir *>(ino_obj)->upload_data(api_, 0, root_path_);
-    } else {
-        ino_obj->upload_data(api_, 0, root_path_);
-    }
+    ino_obj->upload_data(api_, 0, root_path_);
     uint64_t new_msg =
         api_->upload(std::format("{}/{}/inode", root_path_, ino));
     ino_obj->version = new_msg;
@@ -151,23 +147,16 @@ int tgfs_data::update(fuse_ino_t ino) {
         if (msg == inodes_[ino]->version) {
             return 0;
         }
-        if (S_ISDIR(inodes_[ino]->attr->st_mode)) {
-            munmap(inodes_[ino], sizeof(tgfs_dir));
-        } else {
-            munmap(inodes_[ino], sizeof(tgfs_inode));
-        }
+        delete inodes_[ino];
         inodes_.erase(ino);
     }
     api_->download(msg, std::format("{}/{}/inode", root_path_, ino));
     tgfs_inode *ino_obj = new tgfs_inode(ino, root_path_);
-    ino_obj->version = msg;
     if (S_ISDIR(ino_obj->attr->st_mode)) {
         delete ino_obj;
-        tgfs_dir *dir_obj = new tgfs_dir(ino, root_path_);
-        inodes_[ino] = dir_obj;
-        dir_obj->update_data(api_, 0, root_path_);
-        return 0;
+        ino_obj = new tgfs_dir(ino, root_path_);
     }
+    ino_obj->version = msg;
     inodes_[ino] = ino_obj;
     inodes_[ino]->update_data(api_, 0, root_path_);
     return 0;

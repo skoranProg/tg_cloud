@@ -17,11 +17,13 @@ class tgfs_inode {
     struct stat *attr;
     uint64_t version;
 
-    int update_data(tgfs_net_api *api, int n, const std::string &root_path);
-    int upload_data(tgfs_net_api *api, int n, const std::string &root_path);
+    virtual int update_data(tgfs_net_api *api, int n,
+                            const std::string &root_path);
+    virtual int upload_data(tgfs_net_api *api, int n,
+                            const std::string &root_path);
 
     tgfs_inode(fuse_ino_t ino, const std::string &root_path);
-    ~tgfs_inode();
+    virtual ~tgfs_inode();
 
  private:
     uint64_t data_msg_;
