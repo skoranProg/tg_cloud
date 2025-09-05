@@ -21,23 +21,26 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       inodes_{},
       messages_{table_path_} {
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
-    new (root) tgfs_dir(root_path_, {.st_dev = 0,
-                                     .st_ino = FUSE_ROOT_ID,
-                                     .st_nlink = 1,
-                                     .st_mode = S_IFDIR | S_IRWXU,
-                                     .st_uid = geteuid(),
-                                     .st_gid = getegid(),
-                                     .st_rdev = 0,
-                                     .st_size = 666,
-                                     .st_blksize = 0,
-                                     .st_blocks = 1,
-                                     .st_atim = {},
-                                     .st_mtim = {},
-                                     .st_ctim = {}});
+
+    struct stat attr = {.st_dev = 0,
+                        .st_ino = FUSE_ROOT_ID,
+                        .st_nlink = 1,
+                        .st_mode = S_IFDIR | S_IRWXU,
+                        .st_uid = geteuid(),
+                        .st_gid = getegid(),
+                        .st_rdev = 0,
+                        .st_size = 666,
+                        .st_blksize = 0,
+                        .st_blocks = 1,
+                        .st_atim = {},
+                        .st_mtim = {},
+                        .st_ctim = {}};
+    clock_gettime(CLOCK_REALTIME, &(attr.st_atim));
+    attr.st_mtim = attr.st_atim;
+    attr.st_ctim = attr.st_atim;
+
+    *(root->attr) = attr;
     root->init(FUSE_ROOT_ID);
-    clock_gettime(CLOCK_REALTIME, &(root->attr.st_atim));
-    root->attr.st_mtim = root->attr.st_atim;
-    root->attr.st_ctim = root->attr.st_atim;
     last_ino_ = FUSE_ROOT_ID;
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
     upload(FUSE_ROOT_ID);
@@ -105,7 +108,7 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
     if (dir == nullptr) {
         return nullptr;
     }
-    if (!S_ISDIR(dir->attr.st_mode)) {
+    if (!S_ISDIR(dir->attr->st_mode)) {
         // TODO: Send error info
         //       Exception perhaps ?
         //       Or just set errno ?
@@ -117,7 +120,7 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 int tgfs_data::upload(fuse_ino_t ino) {
     uint64_t msg = lookup_msg(ino);
     tgfs_inode *ino_obj = lookup_inode(ino);
-    if (S_ISDIR(ino_obj->attr.st_mode)) {
+    if (S_ISDIR(ino_obj->attr->st_mode)) {
         reinterpret_cast<tgfs_dir *>(ino_obj)->upload_data(api_, 0, root_path_);
     } else {
         ino_obj->upload_data(api_, 0, root_path_);
@@ -135,8 +138,8 @@ int tgfs_data::upload(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(tgfs_inode *ino) {
-    inodes_[ino->attr.st_ino] = ino;
-    return upload(ino->attr.st_ino);
+    inodes_[ino->attr->st_ino] = ino;
+    return upload(ino->attr->st_ino);
 }
 
 int tgfs_data::update(fuse_ino_t ino) {
@@ -148,7 +151,7 @@ int tgfs_data::update(fuse_ino_t ino) {
         if (msg == inodes_[ino]->version) {
             return 0;
         }
-        if (S_ISDIR(inodes_[ino]->attr.st_mode)) {
+        if (S_ISDIR(inodes_[ino]->attr->st_mode)) {
             munmap(inodes_[ino], sizeof(tgfs_dir));
         } else {
             munmap(inodes_[ino], sizeof(tgfs_inode));
@@ -156,11 +159,11 @@ int tgfs_data::update(fuse_ino_t ino) {
         inodes_.erase(ino);
     }
     api_->download(msg, std::format("{}/{}/inode", root_path_, ino));
-    tgfs_inode *ino_obj = map_inode<tgfs_inode>(*this, ino);
+    tgfs_inode *ino_obj = new tgfs_inode(ino, root_path_);
     ino_obj->version = msg;
-    if (S_ISDIR(ino_obj->attr.st_mode)) {
-        munmap(inodes_[ino], sizeof(tgfs_inode));
-        tgfs_dir *dir_obj = map_inode<tgfs_dir>(*this, ino);
+    if (S_ISDIR(ino_obj->attr->st_mode)) {
+        delete ino_obj;
+        tgfs_dir *dir_obj = new tgfs_dir(ino, root_path_);
         inodes_[ino] = dir_obj;
         dir_obj->update_data(api_, 0, root_path_);
         return 0;

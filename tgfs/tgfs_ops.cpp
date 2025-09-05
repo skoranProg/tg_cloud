@@ -40,7 +40,7 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 
     struct fuse_entry_param e = {
         .ino = ino,
-        .attr = ino_obj->attr,
+        .attr = *(ino_obj->attr),
         .attr_timeout = context->get_timeout(),
         .entry_timeout = context->get_timeout(),
     };
@@ -102,11 +102,10 @@ std::optional<struct fuse_entry_param> tgfs_mknod_real(fuse_req_t req,
     e.attr.st_mtim = e.attr.st_atim;
     e.attr.st_ctim = e.attr.st_atim;
 
+    *(ino_obj->attr) = e.attr;
+
     if (std::is_same<T, tgfs_dir>::value) {
-        new (ino_obj) tgfs_dir(context->get_root_path(), e.attr);
         reinterpret_cast<tgfs_dir *>(ino_obj)->init(parent);
-    } else {
-        new (ino_obj) tgfs_inode(e.attr, (uint64_t)0);
     }
 
     if (context->upload(ino_obj) != 0) {
@@ -136,7 +135,6 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 void tgfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
                 mode_t mode) {
     auto e = tgfs_mknod_real<tgfs_dir>(req, parent, name, S_IFDIR | mode, 0);
-
     if (e) {
         fuse_reply_entry(req, &*e);
     }
@@ -160,11 +158,11 @@ void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
     dir->set(newname, ino);
 
     tgfs_inode *ino_obj = context->lookup_inode(ino);
-    ino_obj->attr.st_nlink++;
+    ino_obj->attr->st_nlink++;
 
     struct fuse_entry_param e = {
         .ino = ino,
-        .attr = ino_obj->attr,
+        .attr = *(ino_obj->attr),
         .attr_timeout = context->get_timeout(),
         .entry_timeout = context->get_timeout(),
     };
@@ -200,7 +198,7 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
             tgfs_inode *entino = context->lookup_inode(std::get<2>(ent));
             nextoff = std::get<0>(ent);
             entsize = fuse_add_direntry(req, p, rem, std::get<1>(ent).c_str(),
-                                        &(entino->attr), nextoff);
+                                        entino->attr, nextoff);
             if (entsize > rem) {
                 exit = true;
                 break;
@@ -231,7 +229,7 @@ void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 
     if (fi->flags & O_TRUNC) {
         ftruncate(fd, 0);
-        ino_obj->attr.st_size = 0;
+        ino_obj->attr->st_size = 0;
     }
 
     fuse_reply_open(req, fi);
@@ -270,9 +268,9 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
         fuse_reply_err(req, errno);
     } else {
         tgfs_inode *ino_obj = context->lookup_inode(ino);
-        ino_obj->attr.st_size =
-            std::max(ino_obj->attr.st_size, static_cast<off_t>(off + res));
-        clock_gettime(CLOCK_REALTIME, &(ino_obj->attr.st_mtim));
+        ino_obj->attr->st_size =
+            std::max(ino_obj->attr->st_size, static_cast<off_t>(off + res));
+        clock_gettime(CLOCK_REALTIME, &(ino_obj->attr->st_mtim));
         fuse_reply_write(req, (size_t)res);
     }
 }
@@ -295,7 +293,7 @@ void tgfs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
         fuse_log(FUSE_LOG_DEBUG, "Func: getattr\n\tinode: %u\n", ino);
     }
 
-    fuse_reply_attr(req, &(context->lookup_inode(ino)->attr),
+    fuse_reply_attr(req, context->lookup_inode(ino)->attr,
                     context->get_timeout());
 }
 
@@ -314,21 +312,21 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
             fuse_log(FUSE_LOG_DEBUG, "\tmode: %07o\n", attr->st_mode);
         }
 
-        ino_obj->attr.st_mode = attr->st_mode;
+        ino_obj->attr->st_mode = attr->st_mode;
     }
     if (to_set & FUSE_SET_ATTR_UID) {
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tuid: %07o\n", attr->st_uid);
         }
 
-        ino_obj->attr.st_uid = attr->st_uid;
+        ino_obj->attr->st_uid = attr->st_uid;
     }
     if (to_set & FUSE_SET_ATTR_GID) {
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tgid: %07o\n", attr->st_gid);
         }
 
-        ino_obj->attr.st_gid = attr->st_gid;
+        ino_obj->attr->st_gid = attr->st_gid;
     }
     if (to_set & FUSE_SET_ATTR_SIZE) {
         if (context->is_debug()) {
@@ -342,21 +340,21 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
 
             ftruncate(fi->fh, attr->st_size);
         }
-        ino_obj->attr.st_size = attr->st_size;
+        ino_obj->attr->st_size = attr->st_size;
     }
     if (to_set & FUSE_SET_ATTR_ATIME) {
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tatim\n");
         }
 
-        ino_obj->attr.st_atim = attr->st_atim;
+        ino_obj->attr->st_atim = attr->st_atim;
     }
     if (to_set & FUSE_SET_ATTR_MTIME) {
         if (context->is_debug()) {
             fuse_log(FUSE_LOG_DEBUG, "\tmtim\n");
         }
 
-        ino_obj->attr.st_mtim = attr->st_mtim;
+        ino_obj->attr->st_mtim = attr->st_mtim;
     }
     if (to_set & FUSE_SET_ATTR_ATIME_NOW) {
         // TODO
@@ -372,7 +370,7 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
             fuse_log(FUSE_LOG_DEBUG, "\tctim\n");
         }
 
-        ino_obj->attr.st_ctim = attr->st_ctim;
+        ino_obj->attr->st_ctim = attr->st_ctim;
     }
     if (to_set & FUSE_SET_ATTR_KILL_SUID) {
         // TODO
@@ -395,7 +393,7 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
     if (to_set & FUSE_SET_ATTR_TOUCH) {
         // TODO
     }
-    fuse_reply_attr(req, &(ino_obj->attr), context->get_timeout());
+    fuse_reply_attr(req, ino_obj->attr, context->get_timeout());
 }
 
 struct fuse_lowlevel_ops tgfs_opers = {

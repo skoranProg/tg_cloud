@@ -31,7 +31,7 @@ class tgfs_data {
 
  public:
     tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,
-              tgfs_net_api *api, const std::string& root_path);
+              tgfs_net_api *api, const std::string &root_path);
 
     static tgfs_data *tgfs_ptr(fuse_req_t req);
 

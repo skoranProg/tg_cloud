@@ -13,7 +13,7 @@
 
 class tgfs_dir : public tgfs_inode, public tgfs_table<std::string, fuse_ino_t> {
  public:
-    tgfs_dir(const std::string &root_path, struct stat attrs);
+    tgfs_dir(fuse_ino_t ino, const std::string &root_path);
 
     int init(fuse_ino_t parent_dir);
 
