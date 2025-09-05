@@ -55,9 +55,13 @@ int tgfs_inode::upload_data(tgfs_net_api *api, int n,
     }
     data_version_ =
         api->upload(std::format("{}/{}/data_{}", root_path, attr->st_ino, n));
+    remove_data(api);
+    data_msg_ = data_version_;
+    return 0;
+}
+
+void tgfs_inode::remove_data(tgfs_net_api *api) {
     if (data_msg_ != 0) {
         api->remove(data_msg_);
     }
-    data_msg_ = data_version_;
-    return 0;
 }

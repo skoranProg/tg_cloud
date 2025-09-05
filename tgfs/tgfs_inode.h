@@ -22,6 +22,7 @@ class tgfs_inode {
                             const std::string &root_path);
     virtual int upload_data(tgfs_net_api *api, int n,
                             const std::string &root_path);
+    void remove_data(tgfs_net_api *api);
 
     tgfs_inode(fuse_ino_t ino, const std::string &root_path);
     virtual ~tgfs_inode();

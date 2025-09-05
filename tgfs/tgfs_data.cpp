@@ -41,6 +41,7 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
     attr.st_ctim = attr.st_atim;
 
     *(root->attr) = attr;
+    root->nlookup = 1;
     root->init(FUSE_ROOT_ID);
     last_ino_ = FUSE_ROOT_ID;
     inodes_.emplace(FUSE_ROOT_ID, reinterpret_cast<tgfs_inode *>(root));
@@ -166,6 +167,7 @@ int tgfs_data::update(fuse_ino_t ino) {
 int tgfs_data::remove(tgfs_inode *ino_obj) {
     fuse_ino_t ino = ino_obj->attr->st_ino;
     inodes_.erase(ino);
+    ino_obj->remove_data(api_);
     delete ino_obj;
     uint64_t msg = messages_.at(ino);
     messages_.remove(ino);

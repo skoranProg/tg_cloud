@@ -129,6 +129,7 @@ std::optional<struct fuse_entry_param> tgfs_mknod_real(fuse_req_t req,
     *(ino_obj->attr) = e.attr;
 
     if (std::is_same<T, tgfs_dir>::value) {
+        ino_obj->attr->st_size = 666;
         reinterpret_cast<tgfs_dir *>(ino_obj)->init(parent);
     }
 
@@ -136,6 +137,7 @@ std::optional<struct fuse_entry_param> tgfs_mknod_real(fuse_req_t req,
         // TODO : handle exception
     }
     parent_dir->set(name, ino);
+    ino_obj->nlookup++;
     if (context->upload(parent) != 0) {
         // TODO : handle exception
     }
@@ -167,6 +169,30 @@ void tgfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
     }
 }
 
+void tgfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name) {
+    tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "Func: unlink\n\tdir: %u\n\tname: %s\n",
+                 parent, name);
+    }
+
+    tgfs_dir *dir = context->lookup_dir(parent);
+    fuse_ino_t ino = dir->at(name);
+
+    if (ino == 0) {
+        fuse_reply_err(req, ENOENT);
+        return;
+    }
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
+    ino_obj->nlookup--;
+
+    dir->remove(name);
+    context->upload(parent);
+
+    fuse_reply_err(req, 0);
+}
+
 void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
                const char *newname) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
@@ -183,6 +209,7 @@ void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
         return;
     }
     dir->set(newname, ino);
+    context->upload(newparent);
 
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     ino_obj->attr->st_nlink++;
@@ -431,6 +458,8 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .setattr = tgfs_setattr,
     .mknod = tgfs_mknod,
     .mkdir = tgfs_mkdir,
+    .unlink = tgfs_unlink,
+    .rmdir = tgfs_unlink,
     .link = tgfs_link,
     .open = tgfs_open,
     .read = tgfs_read,
