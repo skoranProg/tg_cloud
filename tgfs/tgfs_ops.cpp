@@ -213,6 +213,7 @@ void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
 
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     ino_obj->attr->st_nlink++;
+    ino_obj->nlookup++;
 
     struct fuse_entry_param e = {
         .ino = ino,
