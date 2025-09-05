@@ -56,6 +56,8 @@ class tgfs_data {
 
     int update(fuse_ino_t ino);
 
+    int remove(tgfs_inode *ino_obj);
+
     fuse_ino_t new_ino();
 };
 

@@ -1,5 +1,6 @@
 #include "tgfs_data.h"
 
+#include <stdio.h>
 #include <sys/mman.h>
 
 #include <format>
@@ -159,6 +160,20 @@ int tgfs_data::update(fuse_ino_t ino) {
     ino_obj->version = msg;
     inodes_[ino] = ino_obj;
     inodes_[ino]->update_data(api_, 0, root_path_);
+    return 0;
+}
+
+int tgfs_data::remove(tgfs_inode *ino_obj) {
+    fuse_ino_t ino = ino_obj->attr->st_ino;
+    inodes_.erase(ino);
+    delete ino_obj;
+    uint64_t msg = messages_.at(ino);
+    messages_.remove(ino);
+    api_->upload_table(table_path_);
+    api_->remove(msg);
+    ::remove(std::format("{}/{}/inode", root_path_, ino).c_str());
+    ::remove(std::format("{}/{}/data_0", root_path_, ino).c_str());
+    ::remove(std::format("{}/{}", root_path_, ino).c_str());
     return 0;
 }
 

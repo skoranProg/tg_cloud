@@ -33,7 +33,7 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
         fuse_log(FUSE_LOG_DEBUG, "\tino: %u\n", ino);
     }
 
-    const tgfs_inode *ino_obj = context->lookup_inode(ino);
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
     if (context->is_debug()) {
         fuse_log(FUSE_LOG_DEBUG, "\tinode: %#x\n", ino_obj);
     }
@@ -45,7 +45,31 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
         .entry_timeout = context->get_timeout(),
     };
 
+    ino_obj->nlookup++;
     fuse_reply_entry(req, &e);
+}
+
+void tgfs_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup) {
+    tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "Func: forget\n\tinode: %u\n\treduce by: %u\n",
+                 ino, nlookup);
+    }
+
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "\tcurrent nlookup: %u\n", ino_obj->nlookup);
+    }
+
+    ino_obj->nlookup -= nlookup;
+
+    if (ino_obj->nlookup == 0) {
+        context->remove(ino_obj);
+    }
+
+    fuse_reply_none(req);
 }
 
 template <DerivedFromInode T>
@@ -116,6 +140,7 @@ std::optional<struct fuse_entry_param> tgfs_mknod_real(fuse_req_t req,
         // TODO : handle exception
     }
 
+    ino_obj->nlookup++;
     return e;
 }
 
@@ -128,6 +153,7 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
 
     auto e = tgfs_mknod_real<tgfs_inode>(req, parent, name, mode, rdev);
     if (e) {
+        // nlookup already incremented in _real function
         fuse_reply_entry(req, &*e);
     }
 }
@@ -136,6 +162,7 @@ void tgfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
                 mode_t mode) {
     auto e = tgfs_mknod_real<tgfs_dir>(req, parent, name, S_IFDIR | mode, 0);
     if (e) {
+        // nlookup already incremented in _real function
         fuse_reply_entry(req, &*e);
     }
 }
@@ -167,6 +194,7 @@ void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
         .entry_timeout = context->get_timeout(),
     };
 
+    ino_obj->nlookup++;
     fuse_reply_entry(req, &e);
 }
 
@@ -398,6 +426,7 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
 
 struct fuse_lowlevel_ops tgfs_opers = {
     .lookup = tgfs_lookup,
+    .forget = tgfs_forget,
     .getattr = tgfs_getattr,
     .setattr = tgfs_setattr,
     .mknod = tgfs_mknod,

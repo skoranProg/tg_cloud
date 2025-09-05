@@ -7,7 +7,7 @@
 #include <iostream>
 
 tgfs_inode::tgfs_inode(fuse_ino_t ino, const std::string &root_path)
-    : attr{nullptr}, version{0}, data_msg_{0}, data_version_{0} {
+    : attr{nullptr}, version{0}, data_msg_{0}, data_version_{0}, nlookup{0} {
     int fd = open(std::format("{}/{}/inode", root_path, ino).c_str(),
                   O_CREAT | O_RDWR, S_IFREG | 0666);
     posix_fallocate(fd, 0, sizeof(struct stat));

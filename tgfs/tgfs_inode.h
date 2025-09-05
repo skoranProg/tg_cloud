@@ -15,6 +15,7 @@
 class tgfs_inode {
  public:
     struct stat *attr;
+    uint64_t nlookup;
     uint64_t version;
 
     virtual int update_data(tgfs_net_api *api, int n,
