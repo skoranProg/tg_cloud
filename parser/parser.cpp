@@ -64,9 +64,9 @@ std::string Parser::get_cache_dir() const {
     return cache_dir_;
 }
 
-std::string Parser::get_key_path() const {
+std::pair<std::string, bool> Parser::get_key_path() const {
     if (key_path_) {
-        return key_path_;
+        return {key_path_, false};
     }
-    return "";
+    return {cache_dir_, true};
 }

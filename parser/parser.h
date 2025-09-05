@@ -23,7 +23,7 @@ public:
 
     std::string get_cache_dir() const;
 
-    std::string get_key_path() const;
+    std::pair<std::string, bool> get_key_path() const;
 private:
 
     char** find_option(const std::string& option, bool not_last = false);
