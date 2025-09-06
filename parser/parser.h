@@ -24,6 +24,8 @@ public:
     std::string get_cache_dir() const;
 
     std::pair<std::string, bool> get_key_path() const;
+
+    bool information_option() const;
 private:
 
     char** find_option(const std::string& option, bool not_last = false);
@@ -35,6 +37,7 @@ private:
     std::vector<char*> tgfs_argv_, tgcl_argv_;
     char* cache_dir_ = nullptr;
     char* key_path_ = nullptr;
+    bool has_information_option_ = false;
 };
 
 const std::vector<std::string> stop_options = {"--help", "--version", "-h", "-v", "-hv"};

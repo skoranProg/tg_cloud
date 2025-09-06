@@ -1,15 +1,16 @@
 #ifndef TG_CLOUD_AES_H
 #define TG_CLOUD_AES_H
 
-#include "encrypt_file.h"
-#include <cryptopp/cryptlib.h>
-#include <cryptopp/filters.h>
 #include <cryptopp/aes.h>
+#include <cryptopp/cryptlib.h>
+#include <cryptopp/files.h>
+#include <cryptopp/filters.h>
 #include <cryptopp/gcm.h>
 #include <cryptopp/osrng.h>
-#include <cryptopp/files.h>
 
 #include <utility>
+
+#include "encrypt_file.h"
 
 using namespace CryptoPP;
 
@@ -17,12 +18,13 @@ using namespace CryptoPP;
 
 class Encryption_Keys {
  public:
-    Encryption_Keys() : key(AES::DEFAULT_KEYLENGTH), iv(AES::BLOCKSIZE * 16) {
-    }
+    Encryption_Keys() : key(AES::DEFAULT_KEYLENGTH), iv(AES::BLOCKSIZE * 16) {}
 
-    Encryption_Keys(const std::string &path, bool generate_ = false) : key(AES::DEFAULT_KEYLENGTH), iv(AES::BLOCKSIZE * 16) {
+    Encryption_Keys(const std::string &path, bool generate_ = false)
+        : key(AES::DEFAULT_KEYLENGTH), iv(AES::BLOCKSIZE * 16) {
         if (generate_) {
             GenerateKeys();
+            std::cout << "Generated .key file by path: " << path << std::endl;
             LoadIntoFile(path);
         } else {
             LoadFromFile(path);
@@ -38,14 +40,14 @@ class Encryption_Keys {
     SecByteBlock key;
 
     SecByteBlock iv;
+
  private:
     const int FILE_SIZE_ = AES::DEFAULT_KEYLENGTH + AES::BLOCKSIZE * 16;
 };
 
 class AES_file_encryptor : public file_encryptor {
  public:
-    AES_file_encryptor(Encryption_Keys* keys) : keys_(keys) {
-    }
+    AES_file_encryptor(Encryption_Keys *keys) : keys_(keys) {}
 
     int encrypt(const std::string &path, const std::string &output) override;
 
@@ -54,9 +56,7 @@ class AES_file_encryptor : public file_encryptor {
  private:
     const int TAG_SIZE = 12;
 
-    Encryption_Keys* keys_;
+    Encryption_Keys *keys_;
 };
-
-
 
 #endif  // TG_CLOUD_AES_H
