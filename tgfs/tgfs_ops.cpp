@@ -48,32 +48,33 @@ void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     fuse_reply_entry(req, &e);
 }
 
-void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
-                mode_t mode, dev_t rdev) {
-    if (!S_ISREG(mode)) {
-        fuse_reply_err(req, ENOSYS);
-        return;
-    }
+template <DerivedFromInode T>
+std::optional<struct fuse_entry_param> tgfs_mknod_real(fuse_req_t req,
+                                                       fuse_ino_t parent,
+                                                       const char *name,
+                                                       mode_t mode,
+                                                       dev_t rdev) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: mknod\n\tparent: %u\n\tname:%s\n",
-                 parent, name);
+        fuse_log(FUSE_LOG_DEBUG, "Func: %s\n\tparent: %u\n\tname:%s\n",
+                 (std::is_same<T, tgfs_dir>::value ? "mkdir" : "mknod"), parent,
+                 name);
     }
 
     tgfs_dir *parent_dir = context->lookup_dir(parent);
     if (parent_dir->contains(name)) {
         fuse_reply_err(req, EEXIST);
-        return;
+        return {};
     }
 
     fuse_ino_t ino = context->new_ino();
 
-    tgfs_inode *ino_obj = make_new_files<tgfs_inode>(*context, ino);
+    T *ino_obj = make_new_files<T>(*context, ino);
 
     if (ino_obj == nullptr) {
         fuse_reply_err(req, errno);
-        return;
+        return {};
     }
 
     struct fuse_entry_param e = {
@@ -101,7 +102,12 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
     e.attr.st_mtim = e.attr.st_atim;
     e.attr.st_ctim = e.attr.st_atim;
 
-    new (ino_obj) tgfs_inode(e.attr, (uint64_t)0);
+    if (std::is_same<T, tgfs_dir>::value) {
+        new (ino_obj) tgfs_dir(context->get_root_path(), e.attr);
+        reinterpret_cast<tgfs_dir *>(ino_obj)->init(parent);
+    } else {
+        new (ino_obj) tgfs_inode(e.attr, (uint64_t)0);
+    }
 
     if (context->upload(ino_obj) != 0) {
         // TODO : handle exception
@@ -111,68 +117,57 @@ void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
         // TODO : handle exception
     }
 
-    fuse_reply_entry(req, &e);
+    return e;
+}
+
+void tgfs_mknod(fuse_req_t req, fuse_ino_t parent, const char *name,
+                mode_t mode, dev_t rdev) {
+    if (!S_ISREG(mode)) {
+        fuse_reply_err(req, ENOSYS);
+        return;
+    }
+
+    auto e = tgfs_mknod_real<tgfs_inode>(req, parent, name, mode, rdev);
+    if (e) {
+        fuse_reply_entry(req, &*e);
+    }
 }
 
 void tgfs_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
                 mode_t mode) {
+    auto e = tgfs_mknod_real<tgfs_dir>(req, parent, name, S_IFDIR | mode, 0);
+
+    if (e) {
+        fuse_reply_entry(req, &*e);
+    }
+}
+
+void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
+               const char *newname) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
     if (context->is_debug()) {
-        fuse_log(FUSE_LOG_DEBUG, "Func: mkdir\n\tparent: %u\n\tname:%s\n",
-                 parent, name);
+        fuse_log(FUSE_LOG_DEBUG,
+                 "Func: link\n\tinode: %u\n\tdir: %u\n\tname: %s\n", ino,
+                 newparent, newname);
     }
 
-    tgfs_dir *parent_dir = context->lookup_dir(parent);
-    if (parent_dir->contains(name)) {
+    tgfs_dir *dir = context->lookup_dir(newparent);
+    if (dir->contains(newname)) {
         fuse_reply_err(req, EEXIST);
         return;
     }
+    dir->set(newname, ino);
 
-    fuse_ino_t ino = context->new_ino();
-
-    tgfs_dir *ino_obj = make_new_files<tgfs_dir>(*context, ino);
-
-    if (ino_obj == nullptr) {
-        fuse_reply_err(req, errno);
-        return;
-    }
+    tgfs_inode *ino_obj = context->lookup_inode(ino);
+    ino_obj->attr.st_nlink++;
 
     struct fuse_entry_param e = {
         .ino = ino,
-        .attr =
-            {
-                .st_dev = 0,
-                .st_ino = ino,
-                .st_nlink = 1,
-                .st_mode = S_IFDIR | mode,
-                .st_uid = geteuid(),
-                .st_gid = getegid(),
-                .st_rdev = 0,
-                .st_size = 666,
-                .st_blksize = 0,
-                .st_blocks = 1,
-                .st_atim = {},
-                .st_mtim = {},
-                .st_ctim = {},
-            },
+        .attr = ino_obj->attr,
         .attr_timeout = context->get_timeout(),
         .entry_timeout = context->get_timeout(),
     };
-    clock_gettime(CLOCK_REALTIME, &(e.attr.st_atim));
-    e.attr.st_mtim = e.attr.st_atim;
-    e.attr.st_ctim = e.attr.st_atim;
-
-    new (ino_obj) tgfs_dir(context->get_root_path(), e.attr);
-    ino_obj->init(parent);
-
-    if (context->upload(ino_obj) != 0) {
-        // TODO : handle exception
-    }
-    parent_dir->set(name, ino);
-    if (context->upload(parent) != 0) {
-        // TODO : handle exception
-    }
 
     fuse_reply_entry(req, &e);
 }
@@ -409,6 +404,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .setattr = tgfs_setattr,
     .mknod = tgfs_mknod,
     .mkdir = tgfs_mkdir,
+    .link = tgfs_link,
     .open = tgfs_open,
     .read = tgfs_read,
     .flush = tgfs_flush,
