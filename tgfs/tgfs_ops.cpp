@@ -185,6 +185,36 @@ void tgfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name) {
         return;
     }
     tgfs_inode *ino_obj = context->lookup_inode(ino);
+    ino_obj->attr->st_nlink--;
+    ino_obj->nlookup--;
+
+    dir->remove(name);
+    context->upload(parent);
+
+    fuse_reply_err(req, 0);
+}
+
+void tgfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name) {
+    tgfs_data *context = tgfs_data::tgfs_ptr(req);
+
+    if (context->is_debug()) {
+        fuse_log(FUSE_LOG_DEBUG, "Func: rmdir\n\tdir: %u\n\tname: %s\n", parent,
+                 name);
+    }
+
+    tgfs_dir *dir = context->lookup_dir(parent);
+    fuse_ino_t ino = dir->at(name);
+
+    if (ino == 0) {
+        fuse_reply_err(req, ENOENT);
+        return;
+    }
+    tgfs_dir *ino_obj = context->lookup_dir(ino);
+    if (!ino_obj->empty()) {
+        fuse_reply_err(req, ENOTEMPTY);
+        return;
+    }
+    ino_obj->attr->st_nlink--;
     ino_obj->nlookup--;
 
     dir->remove(name);
@@ -460,7 +490,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .mknod = tgfs_mknod,
     .mkdir = tgfs_mkdir,
     .unlink = tgfs_unlink,
-    .rmdir = tgfs_unlink,
+    .rmdir = tgfs_rmdir,
     .link = tgfs_link,
     .open = tgfs_open,
     .read = tgfs_read,

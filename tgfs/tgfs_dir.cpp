@@ -60,3 +60,23 @@ int tgfs_dir::update_data(tgfs_net_api *api, int n,
     open(std::format("{}/{}/data_0", root_path, attr->st_ino));
     return err;
 }
+
+bool tgfs_dir::empty() {
+    bool res = false;
+    char *err = nullptr;
+    std::clog << "tgfs_dir::empty()\n";
+    sqlite3_exec(
+        table_,
+        "SELECT COUNT(rowid) FROM (SELECT rowid FROM my_table LIMIT 3);",
+        [](void *res, int n, char *values[], char *columns[]) {
+            *reinterpret_cast<bool *>(res) = (std::atoll(values[0]) < 3);
+            return 0;
+        },
+        &res, &err);
+    std::clog << "\tresult: " << (res ? "true" : "false") << std::endl;
+    if (err) {
+        std::clog << err << std::endl;
+        sqlite3_free(err);
+    }
+    return res;
+}

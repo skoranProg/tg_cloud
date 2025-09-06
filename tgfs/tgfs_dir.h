@@ -24,6 +24,8 @@ class tgfs_dir : public tgfs_inode, public tgfs_table<std::string, fuse_ino_t> {
 
     std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> next(
         uint64_t off, int n) const;
+
+    bool empty();
 };
 
 #endif
