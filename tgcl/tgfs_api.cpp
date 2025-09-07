@@ -10,6 +10,7 @@ td_client_api::td_client_api(TdClass *client_, file_encryptor *encryptor_) : cli
         std::cout << "Incorrect key" << std::endl;
         exit(0);
     }
+    current_table_id_ = -1;
     std::filesystem::remove(path);
 }
 
@@ -19,6 +20,7 @@ int td_client_api::download(uint64_t msg, const std::string &path)  {
     int rename_res = rename(fl->local_->path_.c_str(), encrypted_path.c_str());
     int res = encryptor_->decrypt(encrypted_path, path);
     std::filesystem::remove(encrypted_path);
+    client_->DeleteFile(fl->id_);
     return res;
 }
 
@@ -47,7 +49,7 @@ int td_client_api::download_table(const std::string &path) {
     }
     current_table_id_ = pinned->id_;
     int res = download(current_table_id_, path);
-    if (download(current_table_id_, path)) {
+    if (res) {
         return 3;
     }
     return 0;

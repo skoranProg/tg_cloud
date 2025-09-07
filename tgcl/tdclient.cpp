@@ -35,6 +35,8 @@ auto overloaded(F... f) {
 
 /* Username for file messages */
 
+std::mutex mtx;
+
 td::tl_object_ptr<td_api::file> TdClass::DownloadFile(int32_t file_id,
                                                       bool wait) {
     auto dw = td_api::make_object<td_api::downloadFile>();
@@ -54,14 +56,14 @@ td::tl_object_ptr<td_api::file> TdClass::DownloadFile(int32_t file_id,
         completed_downloads_[result->id_] =
             result->local_->is_downloading_completed_;
     });
+    mtx.lock();
     while (!isDownloaded) {
         ProcessResponse(client_manager_->receive(0));
-        ;
     }
     while (!completed_downloads_[file_id]) {
         ProcessResponse(client_manager_->receive(0));
-        ;
     }
+    mtx.unlock();
     return result;
 }
 
@@ -89,10 +91,11 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(
         }
         last_message = std::move(mes->messages_[0]);
     });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
-        ;
     }
+    mtx.unlock();
     return last_message;
 }
 
@@ -131,24 +134,24 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path,
             fl->document_->document_->remote_->is_uploading_completed_;
         wait = false;
     });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
-        ;
     }
     if (result_mes_id == -1) {
+        mtx.unlock();
         return result_mes_id;
     }
     while (!completed_uploads_[file_id]) {
         ProcessResponse(client_manager_->receive(0));
-        ;
     }
     while (!sent_message_[result_mes_id]) {
         ProcessResponse(client_manager_->receive(0));
-        ;
     }
     if (back_file_id) {
         *back_file_id = file_id;
     }
+    mtx.unlock();
     return sent_message_[result_mes_id];
 }
 
@@ -166,9 +169,11 @@ td_api::int53 TdClass::GetChatId(const std::string &username) {
         auto chats = td::move_tl_object_as<td_api::chat>(object);
         id = chats->id_;
     });
+    mtx.lock();
     while (id == 0) {
         ProcessResponse(client_manager_->receive(0));
     }
+    mtx.unlock();
     return id;
 }
 
@@ -186,9 +191,11 @@ void TdClass::DeleteMessage(td_api::int53 chat_id, td_api::int53 message_id) {
         }
         wait = false;
     });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
     };
+    mtx.unlock();
 }
 
 void TdClass::DeleteFile(int file_id) {
@@ -205,9 +212,11 @@ void TdClass::DeleteFile(int file_id) {
 
         wait = false;
     });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
     };
+    mtx.unlock();
 }
 
 void TdClass::SetMainChatId(const std::string &username) {
@@ -412,9 +421,11 @@ td::tl_object_ptr<td_api::message> TdClass::GetMessage(
         }
         result = td::move_tl_object_as<td_api::message>(object);
     });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
     }
+    mtx.unlock();
     return result;
 }
 
@@ -426,9 +437,11 @@ void TdClass::PinMessage(td_api::int53 chat_id, td_api::int53 message_id) {
     req->only_for_self_ = true;
     bool wait = true;
     SendQuery(std::move(req), [this, &wait](Object object) { wait = false; });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
     }
+    mtx.unlock();
 }
 
 td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(
@@ -445,9 +458,11 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(
         }
         result = td::move_tl_object_as<td_api::message>(object);
     });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
     }
+    mtx.unlock();
     return result;
 }
 
@@ -477,9 +492,11 @@ std::string TdClass::GetTdlibVersion() {
         wait = false;
         result = td::move_tl_object_as<td_api::optionValueString>(object)->value_;
     });
+    mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
     }
+    mtx.unlock();
     return result;
 }
 
