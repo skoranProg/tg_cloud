@@ -37,6 +37,4 @@ target_link_libraries(tg_cloud PRIVATE SQLiteCpp)
 
 target_link_libraries(tg_cloud PRIVATE -lfuse3 -lpthread)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(Cryptopp REQUIRED IMPORTED_TARGET libcrypto++)
-target_link_libraries(tg_cloud PUBLIC PkgConfig::Cryptopp)
+target_link_libraries(tg_cloud PRIVATE -lcryptopp)
