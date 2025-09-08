@@ -3,25 +3,36 @@
 #include <iostream>
 #include <ostream>
 
-
 void Parser::parse() {
-    for (const auto &s : stop_options) {
+    for (const auto& s : stop_options) {
         if (find_option(s)) {
             tgcl_argv_.push_back(*find_option(s));
+            has_information_option_ = true;
+        }
+    }
+    char** key = find_option("--key", true);
+    if (!key && !has_information_option_) {
+        std::cout << "No key provided, it'll generated in working directory"
+                  << std::endl;
+    } else {
+        if (key) {
+            key_path_ = *(key + 1);
         }
     }
     char** cache_dir = find_option("--cache_dir", true);
     if (!cache_dir) {
         std::cerr << "No cache directory provided" << std::endl;
+        exit(1);
         return;
     }
     cache_dir_ = *(cache_dir + 1);
 
-
     char** api_id = find_option("-api_id", true);
     char** api_hash = find_option("-api_hash", true);
     if (api_hash == nullptr || api_id == nullptr) {
-        // Treat errors
+        std::cerr << "No api_hash or api_id provided " << std::endl;
+        exit(2);
+        return;
     } else {
         tgcl_argv_.push_back(*(api_id + 1));
         tgcl_argv_.push_back(*(api_hash + 1));
@@ -29,7 +40,9 @@ void Parser::parse() {
     }
     int current_size = 0;
     for (auto it = argv_; it != argv_ + argc_; it++) {
-        if (it != api_id && it != api_hash && it != api_id + 1 && it != api_hash + 1 && it != cache_dir && it != cache_dir + 1) {
+        if (it != api_id && it != api_hash && it != api_id + 1 &&
+            it != api_hash + 1 && it != cache_dir && it != cache_dir + 1 &&
+            it != key && it != key + 1) {
             tgfs_argv_.push_back(*it);
         }
     }
@@ -53,4 +66,15 @@ char** Parser::find_option(const std::string& option, bool not_last) {
 
 std::string Parser::get_cache_dir() const {
     return cache_dir_;
+}
+
+std::pair<std::string, bool> Parser::get_key_path() const {
+    if (key_path_) {
+        return {key_path_, false};
+    }
+    return {std::string(cache_dir_) + "/tgcloud.key", true};
+}
+
+bool Parser::information_option() const {
+    return has_information_option_;
 }

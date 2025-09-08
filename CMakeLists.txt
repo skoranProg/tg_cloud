@@ -16,7 +16,9 @@ add_executable(tg_cloud
         tgfs/tgfs_dir.cpp
         tgfs/tgfs_inode.cpp
         tgfs/tgfs_table.cpp
+
         parser/parser.cpp
+        encryption/AES.cpp
 )
 
 set_target_properties(tg_cloud
@@ -34,3 +36,5 @@ target_compile_options(SQLiteCpp PUBLIC -DSQLITE_DEFAULT_MMAP_SIZE=268435456 PUB
 target_link_libraries(tg_cloud PRIVATE SQLiteCpp)
 
 target_link_libraries(tg_cloud PRIVATE -lfuse3 -lpthread)
+
+target_link_libraries(tg_cloud PRIVATE -lcryptopp)
