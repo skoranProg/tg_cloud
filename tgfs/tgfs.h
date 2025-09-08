@@ -2,10 +2,11 @@
 #define _TGFS_H_
 
 #include <stdint.h>
+
 #include <string>
 
 class tgfs_net_api {
-  public:
+ public:
     virtual uint64_t upload(const std::string &path) = 0;
     virtual int download(uint64_t msg, const std::string &path) = 0;
     virtual int remove(uint64_t msg) = 0;
@@ -20,6 +21,7 @@ class tgfs_net_api {
     virtual int upload_table(const std::string &path) = 0;
 };
 
-int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api, const std::string& cache_dir);
+int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api,
+                  const std::string &cache_dir);
 
 #endif

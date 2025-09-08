@@ -1,9 +1,12 @@
 #include "tgfs_api.h"
-#include "../encryption/encrypt_file.h"
+
 #include <cstdio>
 #include <filesystem>
 
-td_client_api::td_client_api(TdClass *client_, file_encryptor *encryptor_) : client_(client_), encryptor_(encryptor_) {
+#include "../encryption/encrypt_file.h"
+
+td_client_api::td_client_api(TdClass *client_, file_encryptor *encryptor_)
+    : client_(client_), encryptor_(encryptor_) {
     std::string path = client_->GetDatabaseDir() + "/" + "a";
     if (download_table(path) == 3) {
         std::filesystem::remove(path);
@@ -14,8 +17,9 @@ td_client_api::td_client_api(TdClass *client_, file_encryptor *encryptor_) : cli
     std::filesystem::remove(path);
 }
 
-int td_client_api::download(uint64_t msg, const std::string &path)  {
-    auto fl = client_->DownloadFileFromMes(client_->GetMessage(client_->GetMainChatId(), msg));
+int td_client_api::download(uint64_t msg, const std::string &path) {
+    auto fl = client_->DownloadFileFromMes(
+        client_->GetMessage(client_->GetMainChatId(), msg));
     std::string encrypted_path = path + ".aes";
     int rename_res = rename(fl->local_->path_.c_str(), encrypted_path.c_str());
     int res = encryptor_->decrypt(encrypted_path, path);
@@ -24,16 +28,17 @@ int td_client_api::download(uint64_t msg, const std::string &path)  {
     return res;
 }
 
-int td_client_api::remove(uint64_t msg)  {
+int td_client_api::remove(uint64_t msg) {
     client_->DeleteMessage(client_->GetMainChatId(), msg);
     return 0;
 }
 
-uint64_t td_client_api::upload(const std::string &path)  {
+uint64_t td_client_api::upload(const std::string &path) {
     std::string encrypted_path = path + ".aes";
     encryptor_->encrypt(path, encrypted_path);
     int file_id;
-    uint64_t result = client_->SendFile(client_->GetMainChatId(), encrypted_path, &file_id);
+    uint64_t result =
+        client_->SendFile(client_->GetMainChatId(), encrypted_path, &file_id);
     client_->DeleteFile(file_id);
     std::filesystem::remove(encrypted_path);
     return result;

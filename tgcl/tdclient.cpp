@@ -483,15 +483,17 @@ std::string TdClass::GetDatabaseDir() const {
 std::string TdClass::GetTdlibVersion() {
     std::string result;
     bool wait = true;
-    SendQuery(td_api::make_object<td_api::getOption>("version"), [this, &result, &wait](Object object) {
-
-        if (object->get_id() == td_api::error::ID) {
-            std::cerr << to_string(object) << std::endl;
-            return;
-        }
-        wait = false;
-        result = td::move_tl_object_as<td_api::optionValueString>(object)->value_;
-    });
+    SendQuery(td_api::make_object<td_api::getOption>("version"),
+              [this, &result, &wait](Object object) {
+                  if (object->get_id() == td_api::error::ID) {
+                      std::cerr << to_string(object) << std::endl;
+                      return;
+                  }
+                  wait = false;
+                  result =
+                      td::move_tl_object_as<td_api::optionValueString>(object)
+                          ->value_;
+              });
     mtx.lock();
     while (wait) {
         ProcessResponse(client_manager_->receive(0));
@@ -517,7 +519,8 @@ TdClass create_td_client(int argc, char **argv) {
             }
             if (strcmp(argv[0], "--version") == 0 ||
                 strcmp(argv[0], "-v") == 0 || strcmp(argv[0], "-hv") == 0) {
-                std::cout << "TDlib version: " << TdClass().GetTdlibVersion() << std::endl;
+                std::cout << "TDlib version: " << TdClass().GetTdlibVersion()
+                          << std::endl;
             }
             return {};
         }

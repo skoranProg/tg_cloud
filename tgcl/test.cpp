@@ -1,11 +1,13 @@
 #include "test.h"
-#include "../tgfs/tgfs_data.h"
 
 #include <random>
 
-bool Test_file::CompareFiles(const std::string &path1, const std::string &path2) {
-    std::ifstream ifs1(path1, std::ios::binary|std::ifstream::ate);
-    std::ifstream ifs2(path2, std::ios::binary|std::ifstream::ate);
+#include "../tgfs/tgfs_data.h"
+
+bool Test_file::CompareFiles(const std::string &path1,
+                             const std::string &path2) {
+    std::ifstream ifs1(path1, std::ios::binary | std::ifstream::ate);
+    std::ifstream ifs2(path2, std::ios::binary | std::ifstream::ate);
 
     if (ifs1.fail() || ifs2.fail() || (ifs1.tellg() != ifs2.tellg())) {
         return false;
@@ -13,7 +15,9 @@ bool Test_file::CompareFiles(const std::string &path1, const std::string &path2)
 
     ifs1.seekg(0, std::ios_base::beg);
     ifs2.seekg(0, std::ios_base::beg);
-    return std::equal(std::istreambuf_iterator<char>(ifs1.rdbuf()), std::istreambuf_iterator<char>() ,std::istreambuf_iterator<char>(ifs2.rdbuf()));
+    return std::equal(std::istreambuf_iterator<char>(ifs1.rdbuf()),
+                      std::istreambuf_iterator<char>(),
+                      std::istreambuf_iterator<char>(ifs2.rdbuf()));
 }
 
 std::string Test_file::LoadFile() const {
@@ -23,7 +27,8 @@ std::string Test_file::LoadFile() const {
     return DownloadFileFromMes(td_client_, std::move(mes))->local_->path_;
 }
 
-void RunTest(TdClass *td_class, const std::vector<std::shared_ptr<Test>> &tests) {
+void RunTest(TdClass *td_class,
+             const std::vector<std::shared_ptr<Test>> &tests) {
     std::cout << "Running Tests: " << std::endl;
     for (auto &test : tests) {
         test->print_test();
@@ -35,7 +40,7 @@ void RunTest(TdClass *td_class, const std::vector<std::shared_ptr<Test>> &tests)
     }
 }
 
-void TestFileUpload(TdClass *td_class, const std::vector<std::string> &paths)  {
+void TestFileUpload(TdClass *td_class, const std::vector<std::string> &paths) {
     std::vector<std::shared_ptr<Test>> tests;
     for (auto &path : paths) {
         tests.push_back(std::make_shared<Test_file>(path, td_class));
@@ -43,7 +48,8 @@ void TestFileUpload(TdClass *td_class, const std::vector<std::string> &paths)  {
     RunTest(td_class, tests);
 }
 
-std::unordered_map<fuse_ino_t, uint64_t> GenerateRandomTable(const size_t size) {
+std::unordered_map<fuse_ino_t, uint64_t> GenerateRandomTable(
+    const size_t size) {
     std::mt19937_64 rnd{142};
     std::unordered_map<fuse_ino_t, uint64_t> table;
     for (auto i = 0; i < size; i++) {

@@ -1,6 +1,7 @@
+#include <unistd.h>
+
 #include "tgfs.h"
 #include "tgfs_data.h"
-#include <unistd.h>
 
 extern struct fuse_lowlevel_ops tgfs_opers;
 
@@ -15,18 +16,21 @@ static const struct fuse_opt tgfs_args[] = {
     FUSE_OPT_END};
 
 void tgfs_help() {
-    printf("    -o timeout=1.0         Caching timeout\n"
-           "    -o max_filesize=1024   Maximal size of one file(in Mb)\n");
+    printf(
+        "    -o timeout=1.0         Caching timeout\n"
+        "    -o max_filesize=1024   Maximal size of one file(in Mb)\n");
 }
 
-int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api, const std::string& cache_dir) {
+int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api,
+                  const std::string &cache_dir) {
     int err = 0;
     struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
     struct fuse_cmdline_opts opts;
     struct fuse_loop_config config;
 
-    if (fuse_parse_cmdline(&args, &opts) != 0)
+    if (fuse_parse_cmdline(&args, &opts) != 0) {
         return 42;
+    }
     if (opts.show_help) {
         fuse_cmdline_help();
         fuse_lowlevel_help();
@@ -81,8 +85,9 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api, const std::string& 
         return 33;
     }
 
-    tgfs_data *context = new tgfs_data(opts.debug, custom_opts.timeout, root_fd,
-                                       custom_opts.max_filesize, api, cache_dir);
+    tgfs_data *context =
+        new tgfs_data(opts.debug, custom_opts.timeout, root_fd,
+                      custom_opts.max_filesize, api, cache_dir);
 
     struct fuse_session *se =
         fuse_session_new(&args, &tgfs_opers, sizeof(tgfs_opers), context);
@@ -109,9 +114,9 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api, const std::string& 
     }
     fuse_daemonize(opts.foreground);
 
-    if (opts.singlethread)
+    if (opts.singlethread) {
         err = fuse_session_loop(se);
-    else {
+    } else {
         config.clone_fd = opts.clone_fd;
         config.max_idle_threads = opts.max_idle_threads;
         err = fuse_session_loop_mt(se, &config);
