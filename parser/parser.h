@@ -6,11 +6,10 @@
 #include <vector>
 
 class Parser {
-public:
-
+ public:
     struct options {
         int argc;
-        char **argv;
+        char** argv;
     };
 
     Parser(int argc, char** argv) : argc_(argc), argv_(argv) {
@@ -26,20 +25,21 @@ public:
     std::pair<std::string, bool> get_key_path() const;
 
     bool information_option() const;
-private:
 
+ private:
     char** find_option(const std::string& option, bool not_last = false);
 
     void parse();
 
     int argc_;
-    char **argv_;
+    char** argv_;
     std::vector<char*> tgfs_argv_, tgcl_argv_;
     char* cache_dir_ = nullptr;
     char* key_path_ = nullptr;
     bool has_information_option_ = false;
 };
 
-const std::vector<std::string> stop_options = {"--help", "--version", "-h", "-v", "-hv"};
+const std::vector<std::string> stop_options = {"--help", "--version", "-h",
+                                               "-v", "-hv"};
 
-#endif //PARSER_H
+#endif  // PARSER_H
