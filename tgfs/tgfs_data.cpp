@@ -21,7 +21,7 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       last_ino_{0},
       inodes_{},
       messages_{table_path_} {
-    if (lookup_msg(FUSE_ROOT_ID) == 0) {
+    if (lookup_msg(FUSE_ROOT_ID) != 0) {
         return;
     }
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
