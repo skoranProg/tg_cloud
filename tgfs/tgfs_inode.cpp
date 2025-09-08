@@ -7,17 +7,18 @@
 #include <iostream>
 
 tgfs_inode::tgfs_inode(fuse_ino_t ino, const std::string &root_path)
-    : attr{nullptr}, version{0}, data_msg_{0}, data_version_{0}, nlookup{0} {
+    : attr{nullptr}, nlookup{0}, version{0}, data_version_{0} {
     int fd = open(std::format("{}/{}/inode", root_path, ino).c_str(),
                   O_CREAT | O_RDWR, S_IFREG | 0666);
     posix_fallocate(fd, 0, sizeof(struct stat));
-    attr = reinterpret_cast<struct stat *>(mmap(
-        NULL, sizeof(struct stat), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+    attr = reinterpret_cast<persistent_data *>(
+        mmap(NULL, sizeof(persistent_data), PROT_READ | PROT_WRITE, MAP_SHARED,
+             fd, 0));
     close(fd);
 }
 
 tgfs_inode::~tgfs_inode() {
-    munmap(attr, sizeof(struct stat));
+    munmap(attr, sizeof(persistent_data));
 }
 
 int tgfs_inode::update_data(tgfs_net_api *api, int n,
@@ -33,12 +34,12 @@ int tgfs_inode::update_data(tgfs_net_api *api, int n,
     if (n != 0) {
         return 1;
     }
-    if (data_msg_ == data_version_) {
+    if (attr->data_msg_ == data_version_) {
         return 0;
     }
-    api->download(data_msg_,
+    api->download(attr->data_msg_,
                   std::format("{}/{}/data_{}", root_path, attr->st_ino, n));
-    data_version_ = data_msg_;
+    data_version_ = attr->data_msg_;
     return 0;
 }
 
@@ -56,12 +57,12 @@ int tgfs_inode::upload_data(tgfs_net_api *api, int n,
     data_version_ =
         api->upload(std::format("{}/{}/data_{}", root_path, attr->st_ino, n));
     remove_data(api);
-    data_msg_ = data_version_;
+    attr->data_msg_ = data_version_;
     return 0;
 }
 
 void tgfs_inode::remove_data(tgfs_net_api *api) {
-    if (data_msg_ != 0) {
-        api->remove(data_msg_);
+    if (attr->data_msg_ != 0) {
+        api->remove(attr->data_msg_);
     }
 }

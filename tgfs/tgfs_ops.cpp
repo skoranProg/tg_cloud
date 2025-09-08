@@ -126,7 +126,7 @@ std::optional<struct fuse_entry_param> tgfs_mknod_real(fuse_req_t req,
     e.attr.st_mtim = e.attr.st_atim;
     e.attr.st_ctim = e.attr.st_atim;
 
-    *(ino_obj->attr) = e.attr;
+    *reinterpret_cast<struct stat *>(ino_obj->attr) = e.attr;
 
     if (std::is_same<T, tgfs_dir>::value) {
         ino_obj->attr->st_size = 666;

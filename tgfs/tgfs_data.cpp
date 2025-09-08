@@ -43,7 +43,7 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
     attr.st_mtim = attr.st_atim;
     attr.st_ctim = attr.st_atim;
 
-    *(root->attr) = attr;
+    *reinterpret_cast<struct stat *>(root->attr) = attr;
     root->nlookup = 1;
     root->init(FUSE_ROOT_ID);
     last_ino_ = FUSE_ROOT_ID;
@@ -155,7 +155,7 @@ int tgfs_data::update(fuse_ino_t ino) {
         delete inodes_[ino];
         inodes_.erase(ino);
     }
-    mkdir(std::format("{}/{}", root_path_, ino), 0755);
+    mkdir(std::format("{}/{}", root_path_, ino).c_str(), 0755);
     api_->download(msg, std::format("{}/{}/inode", root_path_, ino));
     tgfs_inode *ino_obj = new tgfs_inode(ino, root_path_);
     if (S_ISDIR(ino_obj->attr->st_mode)) {

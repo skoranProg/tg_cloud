@@ -14,7 +14,12 @@
 
 class tgfs_inode {
  public:
-    struct stat *attr;
+    class persistent_data : public stat {
+        friend tgfs_inode;
+
+     protected:
+        uint64_t data_msg_{0};
+    } *attr;
     uint64_t nlookup;
     uint64_t version;
 
@@ -28,7 +33,6 @@ class tgfs_inode {
     virtual ~tgfs_inode();
 
  private:
-    uint64_t data_msg_;
     uint64_t data_version_;
 };
 
