@@ -22,6 +22,9 @@ class tgfs_dir : public tgfs_inode, public tgfs_table<std::string, fuse_ino_t> {
     virtual int update_data(tgfs_net_api *api, int n,
                             const std::string &root_path) override;
 
+    int set(std::string key, fuse_ino_t value);
+    int remove(std::string key);
+
     std::vector<std::tuple<uint64_t, std::string, fuse_ino_t>> next(
         uint64_t off, int n) const;
 

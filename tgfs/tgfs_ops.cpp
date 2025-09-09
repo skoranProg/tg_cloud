@@ -9,6 +9,11 @@
 #include "tgfs_data.h"
 #include "tgfs_helpers.h"
 
+struct tgfs_fh {
+    int fd;
+    tgfs_inode *ino_obj;
+};
+
 void tgfs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
 
@@ -302,20 +307,22 @@ void tgfs_readdir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 
 void tgfs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
-    tgfs_inode *ino_obj = context->lookup_inode(ino);
-    int fd =
+    struct tgfs_fh *fifh = new tgfs_fh{0, nullptr};
+    fifh->ino_obj = context->lookup_inode(ino);
+    fifh->fd =
         open(std::format("{}/{}/data_0", context->get_root_path(), ino).c_str(),
              fi->flags & (~O_TRUNC));
-    if (fd == -1) {
+    if (fifh->fd == -1) {
+        delete fifh;
         fuse_reply_err(req, errno);
         return;
     }
-    fi->fh = fd;
+    fi->fh = reinterpret_cast<uint64_t>(fifh);
     fi->direct_io = 1;
 
     if (fi->flags & O_TRUNC) {
-        ftruncate(fd, 0);
-        ino_obj->attr->st_size = 0;
+        ftruncate(fifh->fd, 0);
+        fifh->ino_obj->attr->st_size = 0;
     }
 
     fuse_reply_open(req, fi);
@@ -326,7 +333,7 @@ void tgfs_read(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
     struct fuse_bufvec buf = FUSE_BUFVEC_INIT(size);
     buf.buf[0].flags =
         static_cast<fuse_buf_flags>(FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK);
-    buf.buf[0].fd = fi->fh;
+    buf.buf[0].fd = reinterpret_cast<tgfs_fh *>(fi->fh)->fd;
     buf.buf[0].pos = 0;
     buf.off = off;
 
@@ -344,7 +351,7 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
     struct fuse_bufvec out_buf = FUSE_BUFVEC_INIT(bufsize);
     out_buf.buf[0].flags =
         static_cast<fuse_buf_flags>(FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK);
-    out_buf.buf[0].fd = fi->fh;
+    out_buf.buf[0].fd = reinterpret_cast<tgfs_fh *>(fi->fh)->fd;
     out_buf.buf[0].pos = 0;
     out_buf.off = off;
 
@@ -353,10 +360,11 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
     if (res < 0) {
         fuse_reply_err(req, errno);
     } else {
-        tgfs_inode *ino_obj = context->lookup_inode(ino);
+        tgfs_inode *ino_obj = reinterpret_cast<tgfs_fh *>(fi->fh)->ino_obj;
         ino_obj->attr->st_size =
             std::max(ino_obj->attr->st_size, static_cast<off_t>(off + res));
         clock_gettime(CLOCK_REALTIME, &(ino_obj->attr->st_mtim));
+        ino_obj->datawrite();
         fuse_reply_write(req, (size_t)res);
     }
 }
@@ -368,7 +376,9 @@ void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 }
 
 void tgfs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-    int err = close(fi->fh);
+    tgfs_fh *fifh = reinterpret_cast<tgfs_fh *>(fi->fh);
+    int err = close(fifh->fd);
+    delete fifh;
     fuse_reply_err(req, err);
 }
 
@@ -424,7 +434,7 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
                 fuse_log(FUSE_LOG_DEBUG, "\ttruncate fd: %u\n", fi->fh);
             }
 
-            ftruncate(fi->fh, attr->st_size);
+            ftruncate(reinterpret_cast<tgfs_fh *>(fi->fh)->fd, attr->st_size);
         }
         ino_obj->attr->st_size = attr->st_size;
     }

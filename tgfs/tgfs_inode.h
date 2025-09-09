@@ -28,11 +28,13 @@ class tgfs_inode {
     virtual int upload_data(tgfs_net_api *api, int n,
                             const std::string &root_path);
     void remove_data(tgfs_net_api *api);
+    void datawrite();
 
     tgfs_inode(fuse_ino_t ino, const std::string &root_path);
     virtual ~tgfs_inode();
 
  private:
+    bool need_datasync_;
     uint64_t data_version_;
 };
 
