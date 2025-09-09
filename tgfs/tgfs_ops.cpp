@@ -369,10 +369,19 @@ void tgfs_write_buf(fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf,
     }
 }
 
-void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
+void tgfs_sync_true(fuse_req_t req, fuse_ino_t ino) {
     tgfs_data *context = tgfs_data::tgfs_ptr(req);
     int err = context->upload(ino);
     fuse_reply_err(req, err);
+}
+
+void tgfs_flush(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
+    tgfs_sync_true(req, ino);
+}
+
+void tgfs_fsync(fuse_req_t req, fuse_ino_t ino, int datasync,
+                struct fuse_file_info *fi) {
+    tgfs_sync_true(req, ino);
 }
 
 void tgfs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
@@ -506,6 +515,7 @@ struct fuse_lowlevel_ops tgfs_opers = {
     .read = tgfs_read,
     .flush = tgfs_flush,
     .release = tgfs_release,
+    .fsync = tgfs_fsync,
     .readdir = tgfs_readdir,
     .write_buf = tgfs_write_buf,
 };
