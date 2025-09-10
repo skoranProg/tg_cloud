@@ -33,6 +33,8 @@ class tgfs_inode {
     tgfs_inode(fuse_ino_t ino, const std::string &root_path);
     virtual ~tgfs_inode();
 
+    void metasync();
+
  private:
     bool need_datasync_;
     uint64_t data_version_;

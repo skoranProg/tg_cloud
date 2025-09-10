@@ -191,6 +191,7 @@ void tgfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name) {
     }
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     ino_obj->attr->st_nlink--;
+    context->upload(ino);
     ino_obj->nlookup--;
 
     dir->remove(name);
@@ -220,6 +221,7 @@ void tgfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name) {
         return;
     }
     ino_obj->attr->st_nlink--;
+    context->upload(ino);
     ino_obj->nlookup--;
 
     dir->remove(name);
@@ -248,6 +250,7 @@ void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
 
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     ino_obj->attr->st_nlink++;
+    context->upload(ino);
     ino_obj->nlookup++;
 
     struct fuse_entry_param e = {
@@ -498,6 +501,7 @@ void tgfs_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set,
     if (to_set & FUSE_SET_ATTR_TOUCH) {
         // TODO
     }
+    context->upload(ino);
     fuse_reply_attr(req, ino_obj->attr, context->get_timeout());
 }
 

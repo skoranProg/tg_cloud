@@ -22,7 +22,12 @@ tgfs_inode::tgfs_inode(fuse_ino_t ino, const std::string &root_path)
 }
 
 tgfs_inode::~tgfs_inode() {
+    metasync();
     munmap(attr, sizeof(persistent_data));
+}
+
+void tgfs_inode::metasync() {
+    msync(attr, sizeof(persistent_data), MS_SYNC);
 }
 
 int tgfs_inode::update_data(tgfs_net_api *api, int n,
