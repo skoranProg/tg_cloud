@@ -1,5 +1,7 @@
 #include <unistd.h>
 
+#include <fstream>
+
 #include "tgfs.h"
 #include "tgfs_data.h"
 
@@ -83,6 +85,12 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api,
         free(opts.mountpoint);
         fuse_opt_free_args(&args);
         return 33;
+    }
+
+    std::ofstream logstream(std::format("{}/tgcloud.log", cache_dir),
+                            std::ios::out | std::ios::trunc);
+    if (!opts.debug) {
+        std::clog.rdbuf(logstream.rdbuf());
     }
 
     tgfs_data *context =

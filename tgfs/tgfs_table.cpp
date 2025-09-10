@@ -8,7 +8,7 @@ tgfs_db::tgfs_db(const std::string &path) {
 
 void tgfs_db::open(const std::string &path) {
     int err = sqlite3_open(path.c_str(), &table_);
-    std::cerr << "DB open() !!! " << err << "  " << table_ << " " << path
+    std::clog << "DB open() !!! " << err << "  " << table_ << " " << path
               << std::endl;
 }
 
@@ -24,12 +24,12 @@ void tgfs_db::sync() {
     int err1 = sqlite3_db_cacheflush(table_);
     // int err2 =
     //     sqlite3_file_control(table_, nullptr, SQLITE_FCNTL_SYNC, nullptr);
-    std::cerr << "DB sync() !!!" /*<< "  " << err0 */ << "  "
+    std::clog << "DB sync() !!!" /*<< "  " << err0 */ << "  "
               << err1 /*<< "  " << err2*/
               << std::endl;
 }
 
 void tgfs_db::close() {
-    std::cerr << "DB close() !!! " << table_ << std::endl;
+    std::clog << "DB close() !!! " << table_ << std::endl;
     sqlite3_close(table_);
 }

@@ -47,7 +47,7 @@ td::tl_object_ptr<td_api::file> TdClass::DownloadFile(int32_t file_id,
     bool isDownloaded = false;
     SendQuery(std::move(dw), [this, &result, &isDownloaded](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem downloading file:\n"
+            std::clog << "Problem downloading file:\n"
                       << to_string(object) << std::endl;
             return;
         }
@@ -80,13 +80,13 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastMessage(
     SendQuery(std::move(history), [this, &wait, &last_message](Object object) {
         wait = false;
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem Getting last message in the chat:\n"
+            std::clog << "Problem Getting last message in the chat:\n"
                       << to_string(object) << std::endl;
             return;
         }
         auto mes = td::move_tl_object_as<td_api::messages>(object);
         if (!mes->total_count_) {
-            std::cerr << "Couldn't find any messages in file chat.\n";
+            std::clog << "Couldn't find any messages in file chat.\n";
             return;
         }
         last_message = std::move(mes->messages_[0]);
@@ -122,7 +122,7 @@ td_api::int53 TdClass::SendFile(td_api::int53 chat_id, const std::string &path,
     SendQuery(std::move(send_message), [this, &wait, &file_id, &result_mes_id,
                                         &back_fi](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem while sending file\n"
+            std::clog << "Problem while sending file\n"
                       << to_string(object) << std::endl;
             return;
         }
@@ -161,7 +161,7 @@ td_api::int53 TdClass::GetChatId(const std::string &username) {
     td_api::int53 id = 0;
     SendQuery(std::move(find_chat), [this, &id](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem Getting chat id:\n"
+            std::clog << "Problem Getting chat id:\n"
                       << to_string(object) << std::endl;
             id = -1;
             return;
@@ -184,7 +184,7 @@ void TdClass::DeleteMessage(td_api::int53 chat_id, td_api::int53 message_id) {
     bool wait = true;
     SendQuery(std::move(del_mes), [this, &wait](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem Deleting message:\n"
+            std::clog << "Problem Deleting message:\n"
                       << to_string(object) << std::endl;
             wait = false;
             return;
@@ -204,7 +204,7 @@ void TdClass::DeleteFile(int file_id) {
     bool wait = true;
     SendQuery(std::move(del_mes), [this, &wait](Object object) {
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem Deleting file from cache:\n"
+            std::clog << "Problem Deleting file from cache:\n"
                       << to_string(object) << std::endl;
             wait = false;
             return;
@@ -416,7 +416,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetMessage(
     SendQuery(std::move(get_mes), [this, &result, &wait](Object object) {
         wait = false;
         if (object->get_id() == td_api::error::ID) {
-            std::cerr << "Problem getting message\n";
+            std::clog << "Problem getting message\n";
             return;
         }
         result = td::move_tl_object_as<td_api::message>(object);
@@ -453,7 +453,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(
     SendQuery(std::move(get_mes), [this, &result, &wait](Object object) {
         wait = false;
         if (object->get_id() == td_api::error::ID) {
-            // std::cerr << "Problem getting pinned message\n";
+            // std::clog << "Problem getting pinned message\n";
             return;
         }
         result = td::move_tl_object_as<td_api::message>(object);
@@ -469,7 +469,7 @@ td::tl_object_ptr<td_api::message> TdClass::GetLastPinnedMessage(
 std::pair<std::string, int> create_fd_path(const char *path) {
     int fd_dir = open(path, O_RDONLY | O_DIRECTORY);
     if (fd_dir == -1) {
-        std::cerr << "Error opening directory: " << strerror(errno)
+        std::clog << "Error opening directory: " << strerror(errno)
                   << std::endl;
         return {path, -1};
     }
@@ -486,7 +486,7 @@ std::string TdClass::GetTdlibVersion() {
     SendQuery(td_api::make_object<td_api::getOption>("version"),
               [this, &result, &wait](Object object) {
                   if (object->get_id() == td_api::error::ID) {
-                      std::cerr << to_string(object) << std::endl;
+                      std::clog << to_string(object) << std::endl;
                       return;
                   }
                   wait = false;
