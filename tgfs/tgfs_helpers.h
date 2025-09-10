@@ -16,7 +16,7 @@ concept DerivedFromInode = std::is_base_of<tgfs_inode, T>::value;
 template <DerivedFromInode T>
 T *make_new_files(const tgfs_data &context, fuse_ino_t ino) {
     if (mkdir(std::format("{}/{}", context.get_root_path(), ino).c_str(),
-              S_IFDIR | 0755) == -1 &&
+              S_IFDIR | 0777) == -1 &&
         errno != EEXIST) {
         return nullptr;
     }

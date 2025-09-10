@@ -59,7 +59,10 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
 int tgfs_data::update_table(bool force = false) {
     std::clog << "tgfs_data::update_table()\n\tforce: "
               << (force ? "true" : "false") << std::endl;
-    if (!force && api_->is_up_to_date_table()) {
+    bool is_up_to_date = api_->is_up_to_date_table();
+    std::clog << "\t up-to-date: " << (is_up_to_date ? "true" : "false")
+              << std::endl;
+    if (!force && is_up_to_date) {
         return 0;
     }
     std::destroy_at(&messages_);
@@ -74,6 +77,7 @@ int tgfs_data::update_table(bool force = false) {
     if (err == 2) {
         messages_.init();
     }
+    std::clog << "\ttgfs_data::update_table() succeded" << std::endl;
     return 0;
 }
 

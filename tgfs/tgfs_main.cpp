@@ -120,6 +120,9 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api,
         close(root_fd);
         return 1;
     }
+    std::clog << "----------------------------------------------\nDAEMONIZE!!!!"
+                 "!!!!\n----------------------------------------------"
+              << std::endl;
     fuse_daemonize(opts.foreground);
 
     if (opts.singlethread) {
