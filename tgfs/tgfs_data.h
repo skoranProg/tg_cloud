@@ -27,7 +27,7 @@ class tgfs_data {
     // call)
     tgfs_table<fuse_ino_t, uint64_t> messages_;  // ino -> msg_id
 
-    int update_table();
+    int update_table(bool force);
 
  public:
     tgfs_data(bool debug, double timeout, int root_fd, size_t max_filesize,

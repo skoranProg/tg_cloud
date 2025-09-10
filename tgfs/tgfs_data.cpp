@@ -21,9 +21,14 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
       last_ino_{0},
       inodes_{},
       messages_{table_path_} {
+    update_table(true);
     if (lookup_msg(FUSE_ROOT_ID) != 0) {
+        last_ino_ = messages_.max_key();
         return;
     }
+    ::remove(std::format("{}/{}/inode", root_path_, FUSE_ROOT_ID).c_str());
+    ::remove(std::format("{}/{}/data_0", root_path_, FUSE_ROOT_ID).c_str());
+    ::remove(std::format("{}/{}", root_path_, FUSE_ROOT_ID).c_str());
     tgfs_dir *root = make_new_files<tgfs_dir>(*this, FUSE_ROOT_ID);
 
     struct stat attr = {.st_dev = 0,
@@ -51,9 +56,10 @@ tgfs_data::tgfs_data(bool debug, double timeout, int root_fd,
     upload(FUSE_ROOT_ID);
 }
 
-int tgfs_data::update_table() {
-    std::clog << "tgfs_data::update_table()" << std::endl;
-    if (api_->is_up_to_date_table()) {
+int tgfs_data::update_table(bool force = false) {
+    std::clog << "tgfs_data::update_table()\n\tforce: "
+              << (force ? "true" : "false") << std::endl;
+    if (!force && api_->is_up_to_date_table()) {
         return 0;
     }
     std::destroy_at(&messages_);
@@ -61,6 +67,9 @@ int tgfs_data::update_table() {
     do {
         err = api_->download_table(table_path_);
     } while (err != 0 && err != 2);
+    if (err == 2) {
+        ::remove(table_path_.c_str());
+    }
     std::construct_at(&messages_, table_path_);
     if (err == 2) {
         messages_.init();
@@ -184,5 +193,6 @@ int tgfs_data::remove(tgfs_inode *ino_obj) {
 }
 
 fuse_ino_t tgfs_data::new_ino() {
-    return ++last_ino_;
+    while (messages_.contains(++last_ino_));
+    return last_ino_;
 }

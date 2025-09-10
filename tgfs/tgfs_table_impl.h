@@ -144,4 +144,26 @@ int tgfs_table<K, V>::remove(K key) {
     return 0;
 }
 
+template <IntOrStr K, std::integral V>
+K tgfs_table<K, V>::max_key() {
+    static_assert(std::is_integral<K>::value,
+                  "Function max_key() makes sense only for integral keys!");
+    K res = 0;
+    char *err = nullptr;
+    std::clog << "DB max() !!!  " << std::endl;
+    sqlite3_exec(
+        table_, "SELECT MAX(my_key) FROM my_table;",
+        [](void *res, int n, char *values[], char *columns[]) {
+            *reinterpret_cast<K *>(res) = static_cast<K>(std::atoll(values[0]));
+            return 0;
+        },
+        &res, &err);
+    std::clog << "\tresult:  " << res << std::endl;
+    if (err) {
+        std::clog << err << std::endl;
+        sqlite3_free(err);
+    }
+    return res;
+}
+
 #endif
