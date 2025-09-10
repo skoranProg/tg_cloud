@@ -115,11 +115,10 @@ uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
 
 tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
     std::clog << "tgfs_data::lookup_inode\n\tino: " << ino << '\n';
+    update(ino);
     if (!inodes_.contains(ino)) {
-        if (update(ino)) {
-            std::clog << "\n\tresult: 0x0" << std::endl;
-            return nullptr;
-        }
+        std::clog << "\n\tresult: 0x0" << std::endl;
+        return nullptr;
     }
     tgfs_inode *res = inodes_.at(ino);
     std::clog << "\n\tresult: " << res << std::endl;
