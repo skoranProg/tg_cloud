@@ -102,19 +102,24 @@ size_t tgfs_data::get_max_filesize() const {
 }
 
 uint64_t tgfs_data::lookup_msg(fuse_ino_t ino) {
-    std::clog << "tgfs_data::lookup_msg\n\tino: " << ino << std::endl;
+    std::clog << "tgfs_data::lookup_msg\n\tino: " << ino << '\n';
     update_table();
-    return messages_.at(ino);
+    uint64_t res = messages_.at(ino);
+    std::clog << "\n\tresult: " << res << std::endl;
+    return res;
 }
 
 tgfs_inode *tgfs_data::lookup_inode(fuse_ino_t ino) {
-    std::clog << "tgfs_data::lookup_inode\n\tino: " << ino << std::endl;
+    std::clog << "tgfs_data::lookup_inode\n\tino: " << ino << '\n';
     if (!inodes_.contains(ino)) {
         if (update(ino)) {
+            std::clog << "\n\tresult: 0x0" << std::endl;
             return nullptr;
         }
     }
-    return inodes_.at(ino);
+    tgfs_inode *res = inodes_.at(ino);
+    std::clog << "\n\tresult: " << res << std::endl;
+    return res;
 }
 
 tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
@@ -132,8 +137,10 @@ tgfs_dir *tgfs_data::lookup_dir(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(fuse_ino_t ino) {
+    std::clog << "tgfs_data::upload()\n\tino: " << ino << '\n';
     uint64_t msg = lookup_msg(ino);
     tgfs_inode *ino_obj = lookup_inode(ino);
+    std::clog << "\tmsg: " << msg << "\n\tinode ptr: " << ino_obj << std::endl;
     ino_obj->upload_data(api_, 0, root_path_);
     ino_obj->metasync();
     uint64_t new_msg =
@@ -149,12 +156,15 @@ int tgfs_data::upload(fuse_ino_t ino) {
 }
 
 int tgfs_data::upload(tgfs_inode *ino) {
+    std::clog << "tgfs_data::upload()\n\tinode ptr: " << ino << std::endl;
     inodes_[ino->attr->st_ino] = ino;
     return upload(ino->attr->st_ino);
 }
 
 int tgfs_data::update(fuse_ino_t ino) {
+    std::clog << "tgfs_data::update()\n\tino: " << ino << '\n';
     uint64_t msg = lookup_msg(ino);
+    std::clog << "\tmsg: " << msg << std::endl;
     if (msg == 0) {
         return 1;
     }
@@ -179,6 +189,7 @@ int tgfs_data::update(fuse_ino_t ino) {
 }
 
 int tgfs_data::remove(tgfs_inode *ino_obj) {
+    std::clog << "tgfs_data::remove()\n\tinode ptr: " << ino_obj << std::endl;
     fuse_ino_t ino = ino_obj->attr->st_ino;
     inodes_.erase(ino);
     ino_obj->remove_data(api_);
