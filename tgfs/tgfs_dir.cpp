@@ -80,3 +80,13 @@ bool tgfs_dir::empty() {
     }
     return res;
 }
+
+int tgfs_dir::set(std::string key, fuse_ino_t value) {
+    datawrite();
+    return tgfs_table::set(key, value);
+}
+
+int tgfs_dir::remove(std::string key) {
+    datawrite();
+    return tgfs_table::remove(key);
+}

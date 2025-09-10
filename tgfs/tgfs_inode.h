@@ -14,7 +14,12 @@
 
 class tgfs_inode {
  public:
-    struct stat *attr;
+    class persistent_data : public stat {
+        friend tgfs_inode;
+
+     protected:
+        uint64_t data_msg_{0};
+    } *attr;
     uint64_t nlookup;
     uint64_t version;
 
@@ -23,12 +28,15 @@ class tgfs_inode {
     virtual int upload_data(tgfs_net_api *api, int n,
                             const std::string &root_path);
     void remove_data(tgfs_net_api *api);
+    void datawrite();
 
     tgfs_inode(fuse_ino_t ino, const std::string &root_path);
     virtual ~tgfs_inode();
 
+    void metasync();
+
  private:
-    uint64_t data_msg_;
+    bool need_datasync_;
     uint64_t data_version_;
 };
 

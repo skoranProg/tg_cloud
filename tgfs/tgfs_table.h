@@ -37,6 +37,8 @@ class tgfs_table : public tgfs_db {
     bool contains(K key);
     int set(K key, V value);
     int remove(K key);
+
+    K max_key();
 };
 
 #include "tgfs_table_impl.h"
