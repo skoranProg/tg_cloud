@@ -1,5 +1,7 @@
 #include <unistd.h>
 
+#include <fstream>
+
 #include "tgfs.h"
 #include "tgfs_data.h"
 
@@ -85,6 +87,12 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api,
         return 33;
     }
 
+    std::ofstream logstream(std::format("{}/tgcloud.log", cache_dir),
+                            std::ios::out | std::ios::trunc);
+    if (!opts.debug) {
+        std::clog.rdbuf(logstream.rdbuf());
+    }
+
     tgfs_data *context =
         new tgfs_data(opts.debug, custom_opts.timeout, root_fd,
                       custom_opts.max_filesize, api, cache_dir);
@@ -112,6 +120,9 @@ int make_new_tgfs(int argc, char *argv[], tgfs_net_api *api,
         close(root_fd);
         return 1;
     }
+    std::clog << "----------------------------------------------\nDAEMONIZE!!!!"
+                 "!!!!\n----------------------------------------------"
+              << std::endl;
     fuse_daemonize(opts.foreground);
 
     if (opts.singlethread) {

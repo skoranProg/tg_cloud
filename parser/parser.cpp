@@ -21,7 +21,7 @@ void Parser::parse() {
     }
     char** cache_dir = find_option("--cache_dir", true);
     if (!cache_dir) {
-        std::cerr << "No cache directory provided" << std::endl;
+        std::clog << "No cache directory provided" << std::endl;
         exit(1);
         return;
     }
@@ -30,7 +30,7 @@ void Parser::parse() {
     char** api_id = find_option("-api_id", true);
     char** api_hash = find_option("-api_hash", true);
     if (api_hash == nullptr || api_id == nullptr) {
-        std::cerr << "No api_hash or api_id provided " << std::endl;
+        std::clog << "No api_hash or api_id provided " << std::endl;
         exit(2);
         return;
     } else {

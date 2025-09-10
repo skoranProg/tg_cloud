@@ -15,7 +15,7 @@ int AES_file_encryptor::encrypt(const std::string &path,
                    new AuthenticatedEncryptionFilter(
                        e, new FileSink(output.c_str(), true), false, TAG_SIZE));
     } catch (CryptoPP::Exception &e) {
-        std::cerr << e.what() << std::endl;
+        std::clog << e.what() << std::endl;
         return 1;
     }
     return 0;
@@ -34,11 +34,11 @@ int AES_file_encryptor::decrypt(const std::string &path,
         FileSource(path.c_str(), true, new Redirector(df));
 
         if (!df.GetLastResult()) {
-            std::cerr << "Corrupt data's integrity " << std::endl;
+            std::clog << "Corrupt data's integrity " << std::endl;
             return 2;
         }
     } catch (CryptoPP::Exception &e) {
-        // std::cerr <<e.what() << std::endl;
+        // std::clog <<e.what() << std::endl;
         return 1;
     }
     return 0;
@@ -48,14 +48,14 @@ int Encryption_Keys::LoadIntoFile(const std::string &path) {
     try {
         std::ofstream file(path, std::ios::binary);
         if (!file.is_open()) {
-            std::cerr << "Error: Could not open key file" << std::endl;
+            std::clog << "Error: Could not open key file" << std::endl;
             return 1;
         }
         file.write(reinterpret_cast<const char *>(key.BytePtr()), key.size());
         file.write(reinterpret_cast<const char *>(iv.BytePtr()), iv.size());
         return 0;
     } catch (Exception &e) {
-        std::cerr << e.what() << std::endl;
+        std::clog << e.what() << std::endl;
         return 1;
     }
 }
@@ -65,7 +65,7 @@ int Encryption_Keys::LoadFromFile(const std::string &path) {
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
     if (size != FILE_SIZE_) {
-        std::cerr << "Incorrect key file: wrong size" << std::endl;
+        std::clog << "Incorrect key file: wrong size" << std::endl;
         return 1;
     }
     file.read(reinterpret_cast<char *>(key.begin()), AES::DEFAULT_KEYLENGTH);
