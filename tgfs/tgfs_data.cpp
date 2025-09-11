@@ -149,12 +149,12 @@ int tgfs_data::upload(fuse_ino_t ino) {
     uint64_t new_msg =
         api_->upload(std::format("{}/{}/inode", root_path_, ino));
     ino_obj->version = new_msg;
-    if (msg != 0) {
-        api_->remove(msg);
-    }
     messages_.set(ino, new_msg);
     messages_.sync();
     api_->upload_table(table_path_);
+    if (msg != 0) {
+        api_->remove(msg);
+    }
     return 0;
 }
 
