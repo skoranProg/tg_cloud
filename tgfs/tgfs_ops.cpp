@@ -70,7 +70,7 @@ void tgfs_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup) {
 
     ino_obj->nlookup -= nlookup;
 
-    if (ino_obj->nlookup == 0) {
+    if (ino_obj->nlookup + ino_obj->attr->st_nlink == 0) {
         context->remove(ino_obj);
     }
 
@@ -142,7 +142,6 @@ std::optional<struct fuse_entry_param> tgfs_mknod_real(fuse_req_t req,
         // TODO : handle exception
     }
     parent_dir->set(name, ino);
-    ino_obj->nlookup++;
     if (context->upload(parent) != 0) {
         // TODO : handle exception
     }
@@ -192,7 +191,6 @@ void tgfs_unlink(fuse_req_t req, fuse_ino_t parent, const char *name) {
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     ino_obj->attr->st_nlink--;
     context->upload(ino);
-    ino_obj->nlookup--;
 
     dir->remove(name);
     context->upload(parent);
@@ -222,7 +220,6 @@ void tgfs_rmdir(fuse_req_t req, fuse_ino_t parent, const char *name) {
     }
     ino_obj->attr->st_nlink--;
     context->upload(ino);
-    ino_obj->nlookup--;
 
     dir->remove(name);
     context->upload(parent);
@@ -251,7 +248,6 @@ void tgfs_link(fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent,
     tgfs_inode *ino_obj = context->lookup_inode(ino);
     ino_obj->attr->st_nlink++;
     context->upload(ino);
-    ino_obj->nlookup++;
 
     struct fuse_entry_param e = {
         .ino = ino,
