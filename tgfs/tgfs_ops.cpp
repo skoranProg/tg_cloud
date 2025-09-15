@@ -68,10 +68,16 @@ void tgfs_forget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup) {
         fuse_log(FUSE_LOG_DEBUG, "\tcurrent nlookup: %u\n", ino_obj->nlookup);
     }
 
-    ino_obj->nlookup -= nlookup;
-
-    if (ino_obj->nlookup + ino_obj->attr->st_nlink == 0) {
+    if (ino_obj->attr->st_nlink == 0 && ino_obj->nlookup <= nlookup) {
         context->remove(ino_obj);
+        fuse_reply_none(req);
+        return;
+    }
+
+    if (ino_obj->nlookup < nlookup) {
+        ino_obj->nlookup = 0;
+    } else {
+        ino_obj->nlookup -= nlookup;
     }
 
     fuse_reply_none(req);
