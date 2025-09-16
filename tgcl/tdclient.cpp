@@ -416,7 +416,8 @@ td::tl_object_ptr<td_api::message> TdClass::GetMessage(
     SendQuery(std::move(get_mes), [this, &result, &wait](Object object) {
         wait = false;
         if (object->get_id() == td_api::error::ID) {
-            std::clog << "Problem getting message\n";
+            std::clog << "Problem getting message\n"
+                      << to_string(object) << std::endl;
             return;
         }
         result = td::move_tl_object_as<td_api::message>(object);
